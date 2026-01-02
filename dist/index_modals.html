@@ -1,0 +1,100 @@
+    <!-- MODALS -->
+    <!-- Create/Edit Exam Modal -->
+    <div id="examModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="examModalTitle">Create Exam</h2>
+                <span class="close-btn" onclick="closeModal('examModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Exam Name</label>
+                <input type="text" id="examName" placeholder="Enter exam name">
+            </div>
+            <div class="form-group">
+                <label>Exam Date</label>
+                <input type="date" id="examDate">
+            </div>
+            <div class="form-group">
+                <label>Slot 1 Time</label>
+                <input type="time" id="slot1Time">
+            </div>
+            <div class="form-group">
+                <label>Slot 2 Time</label>
+                <input type="time" id="slot2Time">
+            </div>
+            <div class="form-group">
+                <label>Slot 3 Time (Optional)</label>
+                <input type="time" id="slot3Time">
+            </div>
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="saveExam()">✅ Save Exam</button>
+                <button class="btn" onclick="closeModal('examModal')">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload Candidate Data Modal -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Upload Candidate Data</h2>
+                <span class="close-btn" onclick="closeModal('uploadModal')">&times;</span>
+            </div>
+            <div class="form-group">
+                <label>Select Data Type</label>
+                <select id="uploadType" onchange="updatePasswordFields()">
+                    <option value="">Select Type</option>
+                    <option value="mock">Mock Data</option>
+                    <option value="exam">Exam Data</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Upload Excel File</label>
+                <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv">
+            </div>
+            <div class="form-group">
+                <label>Expected Format: Centre Code, Centre Name, Student Name, Father Name, DOB, Slot Time, Photo</label>
+            </div>
+            
+            <!-- Mock Password Section -->
+            <div id="mockPasswordSection" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                <h4 style="color: #0d7377; margin-bottom: 12px;">🔐 Mock Data Password</h4>
+                <div class="form-group">
+                    <label>Set Password for Mock Candidates</label>
+                    <input type="text" id="mockPassword" placeholder="Enter password for mock data">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="text" id="mockPasswordConfirm" placeholder="Confirm password">
+                </div>
+                <button class="btn btn-warning" onclick="generateMockPassword()" style="margin-top: 8px;">🔄 Generate Random Password</button>
+                <div id="mockPasswordDisplay" style="margin-top: 10px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #f39c12; display: none;">
+                    <strong>Generated Password:</strong> <span id="mockPasswordValue"></span>
+                    <button class="btn btn-success" onclick="copyToClipboard('mockPasswordValue')" style="margin-left: 10px;">📋 Copy</button>
+                </div>
+            </div>
+            
+            <!-- Exam Password Section -->
+            <div id="examPasswordSection" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 4px; margin: 15px 0;">
+                <h4 style="color: #0d7377; margin-bottom: 12px;">🔐 Exam Data Password</h4>
+                <div class="form-group">
+                    <label>Set Password for Exam Candidates</label>
+                    <input type="text" id="examPassword" placeholder="Enter password for exam data">
+                </div>
+                <div class="form-group">
+                    <label>Confirm Password</label>
+                    <input type="text" id="examPasswordConfirm" placeholder="Confirm password">
+                </div>
+                <button class="btn btn-warning" onclick="generateExamPassword()" style="margin-top: 8px;">🔄 Generate Random Password</button>
+                <div id="examPasswordDisplay" style="margin-top: 10px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #27ae60; display: none;">
+                    <strong>Generated Password:</strong> <span id="examPasswordValue"></span>
+                    <button class="btn btn-success" onclick="copyToClipboard('examPasswordValue')" style="margin-left: 10px;">📋 Copy</button>
+                </div>
+            </div>
+            
+            <div class="form-actions">
+                <button class="btn btn-primary" onclick="uploadCandidateData()">📤 Upload</button>
+                <button class="btn" onclick="closeModal('uploadModal')">❌ Cancel</button>
+            </div>
+        </div>
+    </div>
