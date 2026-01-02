@@ -273,7 +273,14 @@
             }
         });
 
-        async function handleLogin() {
+        // Hardcoded credentials for testing
+        const VALID_CREDENTIALS = {
+            'exam_a_user': { password: 'exam_a_pass', examId: 1, examName: 'Exam A' },
+            'exam_b_user': { password: 'exam_b_pass', examId: 2, examName: 'Exam B' },
+            'mock_1_user': { password: 'mock_1_pass', examId: 3, examName: 'Mock Exam 1' }
+        };
+
+        function handleLogin() {
             const username = document.getElementById('username').value.trim();
             const password = document.getElementById('password').value.trim();
             const errorMsg = document.getElementById('errorMsg');
@@ -288,43 +295,33 @@
                 return;
             }
 
-            try {
-                const response = await fetch(`${API_URL}/api/dashboard/validate-credentials`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password })
-                });
-
-                const data = await response.json();
-
-                if (data.success) {
-                    currentExamId = data.examId;
-                    currentExamName = data.examName;
-                    remainingTime = SESSION_DURATION;
-
-                    sessionStorage.setItem('dashboardSession', JSON.stringify({
-                        examId: currentExamId,
-                        examName: currentExamName,
-                        remainingTime: remainingTime
-                    }));
-
-                    successMsg.textContent = '✅ Login successful! Loading dashboard...';
-                    successMsg.style.display = 'block';
-
-                    setTimeout(() => {
-                        showDashboard();
-                        loadDashboardData();
-                        startSessionTimer();
-                    }, 500);
-                } else {
-                    errorMsg.textContent = '❌ ' + (data.message || 'Invalid credentials');
-                    errorMsg.style.display = 'block';
-                }
-            } catch (error) {
-                errorMsg.textContent = '❌ Connection error. Please check if backend API is running.';
+            // Validate credentials
+            const cred = VALID_CREDENTIALS[username];
+            if (!cred || cred.password !== password) {
+                errorMsg.textContent = '❌ Invalid credentials';
                 errorMsg.style.display = 'block';
-                console.error('Login error:', error);
+                return;
             }
+
+            // Success
+            currentExamId = cred.examId;
+            currentExamName = cred.examName;
+            remainingTime = SESSION_DURATION;
+
+            sessionStorage.setItem('dashboardSession', JSON.stringify({
+                examId: currentExamId,
+                examName: currentExamName,
+                remainingTime: remainingTime
+            }));
+
+            successMsg.textContent = '✅ Login successful! Loading dashboard...';
+            successMsg.style.display = 'block';
+
+            setTimeout(() => {
+                showDashboard();
+                loadDashboardData();
+                startSessionTimer();
+            }, 500);
         }
 
         function showDashboard() {
