@@ -1,0 +1,9 @@
+nohup: ignoring input
+⚠️  Could not connect to PostgreSQL: 
+⚠️  Using fallback credentials
+✅ Dashboard server running on http://13.204.65.158:8080
+📊 Dashboard: http://13.204.65.158:8080/dashboard
+🔌 API Proxy: http://13.204.65.158:8080/api/*
+📊 Health: http://13.204.65.158:8080/api/health
+
+🔐 Using fallback credentials
