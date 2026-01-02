@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Exam Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        
+        /* LOGIN PAGE */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { color: #0d7377; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn-login { width: 100%; padding: 12px; background: #0d7377; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-login:hover { background: #0a5a66; }
+        .btn-login:disabled { background: #999; }
+        .error-msg { color: #e74c3c; margin-bottom: 20px; padding: 12px; background: #f8d7da; border-radius: 4px; display: none; border-left: 4px solid #e74c3c; }
+        .success-msg { color: #27ae60; margin-bottom: 20px; padding: 12px; background: #d4edda; border-radius: 4px; display: none; border-left: 4px solid #27ae60; }
+        
+        /* DASHBOARD PAGE */
+        .dashboard-container { display: flex; height: 100vh; }
+        .dashboard-sidebar { width: 200px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 20px 0; overflow-y: auto; }
+        .dashboard-sidebar-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; font-weight: bold; transition: 0.3s; }
+        .dashboard-sidebar-item:hover { background: rgba(0,0,0,0.2); }
+        .dashboard-sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .dashboard-main { flex: 1; display: flex; flex-direction: column; }
+        .dashboard-header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { font-size: 22px; }
+        .dashboard-header-controls { display: flex; gap: 10px; align-items: center; }
+        .sync-status { padding: 8px 16px; background: #27ae60; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .sync-status.syncing { background: #f39c12; }
+        .sync-status.error { background: #e74c3c; }
+        .session-timer { padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .btn-logout { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-logout:hover { background: #c0392b; }
+        .dashboard-content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid #0d7377; }
+        .stat-number { font-size: 36px; font-weight: bold; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; }
+        
+        /* TABLES */
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; font-weight: bold; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: bold; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        
+        /* BADGES */
+        .badge { display: inline-block; padding: 6px 12px; border-radius: 4px; font-size: 12px; font-weight: bold; text-align: center; min-width: 60px; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0d7377; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>📊 Real-time Exam Dashboard</h1>
+            <p>Enter your exam credentials to access live exam data</p>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="success-msg" id="successMsg"></div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="exam_a_user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="exam_a_pass">
+            </div>
+            <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
+        <div class="dashboard-sidebar">
+            <div class="dashboard-sidebar-item active" onclick="showTab('overview', this)">📊 OVERVIEW</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('candidates', this)">👥 CANDIDATES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('centres', this)">🏢 CENTRES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('reports', this)">📈 REPORTS</div>
+        </div>
+
+        <div class="dashboard-main">
+            <div class="dashboard-header">
+                <h1 id="dashboardTitle">Live Exam Dashboard</h1>
+                <div class="dashboard-header-controls">
+                    <div class="sync-status" id="syncStatus">🔄 Syncing...</div>
+                    <div class="session-timer" id="sessionTimer">Session: 5:00</div>
+                    <button class="btn-logout" onclick="handleLogout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <!-- OVERVIEW TAB -->
+                <div id="overview" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCandidates">0</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="presentCount">0</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="absentCount">0</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="verifiedCount">0</div>
+                            <div class="stat-label">Verified</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>Live Candidates Data</h3>
+                        <div class="table-controls">
+                            <select id="candidateCentreFilter" onchange="filterCandidates()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="candidateSearch" placeholder="Search by name or roll" onkeyup="filterCandidates()">
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Roll No</th>
+                                    <th>Name</th>
+                                    <th>Centre</th>
+                                    <th>Slot</th>
+                                    <th>Present</th>
+                                    <th>Verified</th>
+                                    <th>Last Updated</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidatesTable">
+                                <tr><td colspan="7" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centres Summary</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Centre Name</th>
+                                    <th>Total Candidates</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centresTable">
+                                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Report</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTable">
+                                <tr><td colspan="3" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Exam Credentials Mapping
+        const examCredentials = {
+            'exam_a_user': { password: 'exam_a_pass', examId: 'exam_a', examName: 'Exam A' },
+            'exam_b_user': { password: 'exam_b_pass', examId: 'exam_b', examName: 'Exam B' },
+            'mock_1_user': { password: 'mock_1_pass', examId: 'mock_1', examName: 'Mock Exam 1' }
+        };
+
+        let currentExamId = null;
+        let currentExamName = null;
+        let allCandidates = [];
+        let allCentres = [];
+        let sessionTimeoutId = null;
+        let sessionTimerIntervalId = null;
+        let inactivityTimeoutId = null;
+        const SESSION_DURATION = 5 * 60; // 5 minutes in seconds
+        let remainingTime = SESSION_DURATION;
+
+        // Mock Data
+        const mockData = {
+            exam_a: {
+                candidates: [
+                    { id: 1, roll: '11000001', name: 'Candidate 1', centre: 'Centre 1', slot: '09:00 AM', present: true, verified: true },
+                    { id: 2, roll: '11000002', name: 'Candidate 2', centre: 'Centre 1', slot: '09:00 AM', present: true, verified: false },
+                    { id: 3, roll: '11000003', name: 'Candidate 3', centre: 'Centre 2', slot: '11:00 AM', present: false, verified: false }
+                ],
+                centres: [
+                    { code: 'Centre 1', name: 'Centre 1', total: 2, present: 2, absent: 0, verified: 1 },
+                    { code: 'Centre 2', name: 'Centre 2', total: 1, present: 0, absent: 1, verified: 0 }
+                ]
+            },
+            exam_b: {
+                candidates: [
+                    { id: 4, roll: '12000001', name: 'Candidate 4', centre: 'Centre 1', slot: '02:00 PM', present: true, verified: true },
+                    { id: 5, roll: '12000002', name: 'Candidate 5', centre: 'Centre 2', slot: '02:00 PM', present: true, verified: false }
+                ],
+                centres: [
+                    { code: 'Centre 1', name: 'Centre 1', total: 1, present: 1, absent: 0, verified: 1 },
+                    { code: 'Centre 2', name: 'Centre 2', total: 1, present: 1, absent: 0, verified: 0 }
+                ]
+            },
+            mock_1: {
+                candidates: [
+                    { id: 6, roll: '13000001', name: 'Candidate 6', centre: 'Centre 1', slot: '10:00 AM', present: true, verified: true },
+                    { id: 7, roll: '13000002', name: 'Candidate 7', centre: 'Centre 1', slot: '10:00 AM', present: false, verified: false },
+                    { id: 8, roll: '13000003', name: 'Candidate 8', centre: 'Centre 2', slot: '01:00 PM', present: true, verified: true }
+                ],
+                centres: [
+                    { code: 'Centre 1', name: 'Centre 1', total: 2, present: 1, absent: 1, verified: 1 },
+                    { code: 'Centre 2', name: 'Centre 2', total: 1, present: 1, absent: 0, verified: 1 }
+                ]
+            }
+        };
+
+        // Check if user is already logged in (session persistence)
+        window.addEventListener('load', () => {
+            const savedSession = sessionStorage.getItem('dashboardSession');
+            if (savedSession) {
+                const session = JSON.parse(savedSession);
+                currentExamId = session.examId;
+                currentExamName = session.examName;
+                remainingTime = session.remainingTime || SESSION_DURATION;
+                
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboardPage').style.display = 'flex';
+                document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+                loadDashboardData();
+                startAutoSync();
+                startSessionTimer();
+            }
+        });
+
+        function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            if (!username || !password) {
+                errorMsg.textContent = '❌ Please enter username and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            if (examCredentials[username] && examCredentials[username].password === password) {
+                currentExamId = examCredentials[username].examId;
+                currentExamName = examCredentials[username].examName;
+                remainingTime = SESSION_DURATION;
+                
+                // Save session to sessionStorage (persists on refresh)
+                sessionStorage.setItem('dashboardSession', JSON.stringify({
+                    examId: currentExamId,
+                    examName: currentExamName,
+                    remainingTime: remainingTime
+                }));
+                
+                successMsg.textContent = '✅ Login successful! Loading dashboard...';
+                successMsg.style.display = 'block';
+                
+                setTimeout(() => {
+                    document.getElementById('loginPage').style.display = 'none';
+                    document.getElementById('dashboardPage').style.display = 'flex';
+                    document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+                    loadDashboardData();
+                    startAutoSync();
+                    startSessionTimer();
+                }, 500);
+            } else {
+                errorMsg.textContent = '❌ Invalid credentials';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function startSessionTimer() {
+            // Clear any existing timers
+            if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+            if (sessionTimeoutId) clearTimeout(sessionTimeoutId);
+
+            // Update timer every second
+            sessionTimerIntervalId = setInterval(() => {
+                remainingTime--;
+                updateTimerDisplay();
+                
+                // Save remaining time to sessionStorage
+                const session = JSON.parse(sessionStorage.getItem('dashboardSession') || '{}');
+                session.remainingTime = remainingTime;
+                sessionStorage.setItem('dashboardSession', JSON.stringify(session));
+
+                if (remainingTime <= 0) {
+                    clearInterval(sessionTimerIntervalId);
+                    autoLogout();
+                }
+            }, 1000);
+
+            // Auto-logout after 5 minutes
+            sessionTimeoutId = setTimeout(() => {
+                autoLogout();
+            }, SESSION_DURATION * 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('sessionTimer').textContent = `Session: ${timeStr}`;
+        }
+
+        function autoLogout() {
+            alert('⏱️ Your session has expired due to inactivity. Please login again.');
+            handleLogout();
+        }
+
+        function loadDashboardData() {
+            const data = mockData[currentExamId];
+            if (!data) return;
+
+            allCandidates = data.candidates;
+            allCentres = data.centres;
+
+            updateStats();
+            renderCandidatesTable();
+            renderCentresTable();
+            renderReportsTable();
+            populateCentreFilter();
+        }
+
+        function updateStats() {
+            const total = allCandidates.length;
+            const present = allCandidates.filter(c => c.present).length;
+            const absent = allCandidates.filter(c => !c.present).length;
+            const verified = allCandidates.filter(c => c.verified).length;
+
+            document.getElementById('totalCandidates').textContent = total;
+            document.getElementById('presentCount').textContent = present;
+            document.getElementById('absentCount').textContent = absent;
+            document.getElementById('verifiedCount').textContent = verified;
+        }
+
+        function renderCandidatesTable() {
+            const tbody = document.getElementById('candidatesTable');
+            tbody.innerHTML = '';
+
+            allCandidates.forEach(candidate => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${candidate.roll}</td>
+                    <td>${candidate.name}</td>
+                    <td>${candidate.centre}</td>
+                    <td>${candidate.slot}</td>
+                    <td><span class="badge ${candidate.present ? 'badge-success' : 'badge-danger'}">${candidate.present ? 'Yes' : 'No'}</span></td>
+                    <td><span class="badge ${candidate.verified ? 'badge-success' : 'badge-warning'}">${candidate.verified ? 'Yes' : 'Pending'}</span></td>
+                    <td>${new Date().toLocaleTimeString()}</td>
+                `;
+            });
+        }
+
+        function renderCentresTable() {
+            const tbody = document.getElementById('centresTable');
+            tbody.innerHTML = '';
+
+            allCentres.forEach(centre => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${centre.code}</td>
+                    <td>${centre.name}</td>
+                    <td>${centre.total}</td>
+                    <td><span class="badge badge-success">${centre.present}</span></td>
+                    <td><span class="badge badge-danger">${centre.absent}</span></td>
+                    <td><span class="badge badge-info">${centre.verified}</span></td>
+                `;
+            });
+        }
+
+        function renderReportsTable() {
+            const tbody = document.getElementById('reportsTable');
+            tbody.innerHTML = '';
+
+            const total = allCandidates.length;
+            const present = allCandidates.filter(c => c.present).length;
+            const absent = allCandidates.filter(c => !c.present).length;
+            const verified = allCandidates.filter(c => c.verified).length;
+            const pending = total - verified;
+
+            const metrics = [
+                { label: 'Total Candidates', value: total, percentage: '100%' },
+                { label: 'Present', value: present, percentage: ((present/total)*100).toFixed(1) + '%' },
+                { label: 'Absent', value: absent, percentage: ((absent/total)*100).toFixed(1) + '%' },
+                { label: 'Verified', value: verified, percentage: ((verified/total)*100).toFixed(1) + '%' },
+                { label: 'Pending Verification', value: pending, percentage: ((pending/total)*100).toFixed(1) + '%' }
+            ];
+
+            metrics.forEach(metric => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${metric.label}</td>
+                    <td>${metric.value}</td>
+                    <td>${metric.percentage}</td>
+                `;
+            });
+        }
+
+        function populateCentreFilter() {
+            const select = document.getElementById('candidateCentreFilter');
+            select.innerHTML = '<option value="">All Centres</option>';
+            const centres = [...new Set(allCandidates.map(c => c.centre))];
+            
+            centres.forEach(centre => {
+                const option = document.createElement('option');
+                option.value = centre;
+                option.textContent = centre;
+                select.appendChild(option);
+            });
+        }
+
+        function filterCandidates() {
+            const centreFilter = document.getElementById('candidateCentreFilter').value;
+            const searchTerm = document.getElementById('candidateSearch').value.toLowerCase();
+            const tbody = document.getElementById('candidatesTable');
+            tbody.innerHTML = '';
+
+            let filtered = allCandidates;
+
+            if (centreFilter) {
+                filtered = filtered.filter(c => c.centre === centreFilter);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    c.name.toLowerCase().includes(searchTerm) || 
+                    c.roll.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            filtered.forEach(candidate => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${candidate.roll}</td>
+                    <td>${candidate.name}</td>
+                    <td>${candidate.centre}</td>
+                    <td>${candidate.slot}</td>
+                    <td><span class="badge ${candidate.present ? 'badge-success' : 'badge-danger'}">${candidate.present ? 'Yes' : 'No'}</span></td>
+                    <td><span class="badge ${candidate.verified ? 'badge-success' : 'badge-warning'}">${candidate.verified ? 'Yes' : 'Pending'}</span></td>
+                    <td>${new Date().toLocaleTimeString()}</td>
+                `;
+            });
+        }
+
+        function showTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.dashboard-sidebar-item').forEach(item => item.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function startAutoSync() {
+            setInterval(() => {
+                const syncStatus = document.getElementById('syncStatus');
+                syncStatus.textContent = '🔄 Syncing...';
+                syncStatus.className = 'sync-status syncing';
+
+                setTimeout(() => {
+                    loadDashboardData();
+                    syncStatus.textContent = '✅ Synced';
+                    syncStatus.className = 'sync-status';
+                }, 1000);
+            }, 5000);
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                // Clear timers
+                if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+                if (sessionTimeoutId) clearTimeout(sessionTimeoutId);
+                
+                // Clear session storage
+                sessionStorage.removeItem('dashboardSession');
+                
+                currentExamId = null;
+                currentExamName = null;
+                remainingTime = SESSION_DURATION;
+                
+                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('dashboardPage').style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+                document.getElementById('errorMsg').style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>
