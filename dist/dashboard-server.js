@@ -7,7 +7,7 @@ app.use(express.static(path.join(__dirname)));
 
 // Dashboard routes
 app.get('/dashboard', (req, res) => {
-    res.sendFile(path.join(__dirname, 'exam-dashboard-v5.html'));
+    res.sendFile(path.join(__dirname, 'exam-dashboard-v6.html'));
 });
 
 app.get('/admin', (req, res) => {

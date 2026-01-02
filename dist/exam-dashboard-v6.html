@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Exam Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        
+        /* LOGIN PAGE */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { color: #0d7377; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn-login { width: 100%; padding: 12px; background: #0d7377; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-login:hover { background: #0a5a66; }
+        .error-msg { color: #e74c3c; margin-bottom: 20px; padding: 12px; background: #f8d7da; border-radius: 4px; display: none; border-left: 4px solid #e74c3c; }
+        .success-msg { color: #27ae60; margin-bottom: 20px; padding: 12px; background: #d4edda; border-radius: 4px; display: none; border-left: 4px solid #27ae60; }
+        
+        /* DASHBOARD PAGE */
+        .dashboard-container { display: flex; height: 100vh; }
+        .dashboard-sidebar { width: 200px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 20px 0; overflow-y: auto; }
+        .dashboard-sidebar-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; font-weight: bold; transition: 0.3s; }
+        .dashboard-sidebar-item:hover { background: rgba(0,0,0,0.2); }
+        .dashboard-sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .dashboard-main { flex: 1; display: flex; flex-direction: column; }
+        .dashboard-header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { font-size: 22px; }
+        .dashboard-header-controls { display: flex; gap: 10px; align-items: center; }
+        .sync-status { padding: 8px 16px; background: #27ae60; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .session-timer { padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .btn-logout { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-logout:hover { background: #c0392b; }
+        .dashboard-content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid #0d7377; }
+        .stat-number { font-size: 36px; font-weight: bold; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; }
+        
+        /* TABLES */
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; font-weight: bold; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: bold; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        
+        /* BADGES */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-align: center; min-width: 50px; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-info { background: #3498db; color: white; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>📊 Real-time Exam Dashboard</h1>
+            <p>Enter your exam credentials to access live exam data</p>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="success-msg" id="successMsg"></div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="exam_a_user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="exam_a_pass">
+            </div>
+            <button class="btn-login" onclick="handleLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
+        <!-- SIDEBAR -->
+        <div class="dashboard-sidebar">
+            <div class="dashboard-sidebar-item active" onclick="switchTab('overview')">📊 Overview</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('operators')">👥 Operators</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('candidates')">👨‍🎓 Candidates</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('centres')">🏢 Centres</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('reports')">📈 Reports</div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="dashboard-main">
+            <!-- HEADER -->
+            <div class="dashboard-header">
+                <h1 id="dashboardTitle">Live Exam Dashboard</h1>
+                <div class="dashboard-header-controls">
+                    <div class="sync-status" id="syncStatus">✅ Synced</div>
+                    <div class="session-timer" id="sessionTimer">5:00</div>
+                    <button class="btn-logout" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="dashboard-content">
+                <!-- OVERVIEW TAB -->
+                <div id="overview" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCandidates">0</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="presentCount">0</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="absentCount">0</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="verifiedCount">0</div>
+                            <div class="stat-label">Verified</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre-wise Operators</h3>
+                        <div class="table-controls">
+                            <select id="operatorCentreFilter" onchange="filterOperators()">
+                                <option value="">All Centres</option>
+                                <option value="Centre 1">Centre 1</option>
+                                <option value="Centre 2">Centre 2</option>
+                            </select>
+                            <input type="text" id="operatorSearch" placeholder="Search by name..." onkeyup="filterOperators()">
+                        </div>
+                        <table id="operatorsTable">
+                            <thead>
+                                <tr>
+                                    <th>Operator Name</th>
+                                    <th>Phone</th>
+                                    <th>Aadhaar</th>
+                                    <th>Centre Code</th>
+                                    <th>Selfie</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operatorsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>Candidate Details</h3>
+                        <div class="table-controls">
+                            <select id="candidateCentreFilter" onchange="filterCandidates()">
+                                <option value="">All Centres</option>
+                                <option value="Centre 1">Centre 1</option>
+                                <option value="Centre 2">Centre 2</option>
+                            </select>
+                            <input type="text" id="candidateSearch" placeholder="Search by name..." onkeyup="filterCandidates()">
+                        </div>
+                        <table id="candidatesTable">
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Student Name</th>
+                                    <th>Father Name</th>
+                                    <th>DOB</th>
+                                    <th>OMR No.</th>
+                                    <th>Present</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidatesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre Summary</h3>
+                        <table id="centresTable">
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Centre Name</th>
+                                    <th>Total Candidates</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centresList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Report</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Candidates</td>
+                                    <td id="reportTotal">0</td>
+                                    <td>100%</td>
+                                </tr>
+                                <tr>
+                                    <td>Present</td>
+                                    <td id="reportPresent">0</td>
+                                    <td id="reportPresentPct">0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Absent</td>
+                                    <td id="reportAbsent">0</td>
+                                    <td id="reportAbsentPct">0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Verified</td>
+                                    <td id="reportVerified">0</td>
+                                    <td id="reportVerifiedPct">0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Hardcoded credentials
+        const VALID_CREDENTIALS = {
+            'exam_a_user': { password: 'exam_a_pass', examId: 1, examName: 'Exam A' },
+            'exam_b_user': { password: 'exam_b_pass', examId: 2, examName: 'Exam B' },
+            'mock_1_user': { password: 'mock_1_pass', examId: 3, examName: 'Mock Exam 1' }
+        };
+
+        // Mock data
+        const MOCK_DATA = {
+            1: {
+                operators: [
+                    { id: 1, name: 'Operator 1', phone: '9876543210', aadhaar: '123456789012', centre: 'Centre 1', selfie: '👤' },
+                    { id: 2, name: 'Operator 2', phone: '9876543211', aadhaar: '123456789013', centre: 'Centre 2', selfie: '👤' }
+                ],
+                candidates: [
+                    { id: 1, centre: 'Centre 1', name: 'Candidate 1', father: 'Father 1', dob: '2000-01-01', omr: '11000001', present: 'Yes', verified: 'Yes' },
+                    { id: 2, centre: 'Centre 1', name: 'Candidate 2', father: 'Father 2', dob: '2000-02-02', omr: '11000002', present: 'Yes', verified: 'No' },
+                    { id: 3, centre: 'Centre 2', name: 'Candidate 3', father: 'Father 3', dob: '2000-03-03', omr: '11000003', present: 'No', verified: 'No' },
+                    { id: 4, centre: 'Centre 2', name: 'Candidate 4', father: 'Father 4', dob: '2000-04-04', omr: '11000004', present: 'Yes', verified: 'Yes' }
+                ],
+                centres: [
+                    { code: 'Centre 1', name: 'Centre 1', total: 2, present: 2, absent: 0, verified: 1 },
+                    { code: 'Centre 2', name: 'Centre 2', total: 2, present: 1, absent: 1, verified: 1 }
+                ]
+            }
+        };
+
+        let currentExamId = null;
+        let currentExamName = null;
+        let remainingTime = 300; // 5 minutes
+        const SESSION_DURATION = 300;
+
+        // Check if session exists on page load
+        window.addEventListener('load', () => {
+            const session = sessionStorage.getItem('dashboardSession');
+            if (session) {
+                const data = JSON.parse(session);
+                currentExamId = data.examId;
+                currentExamName = data.examName;
+                remainingTime = data.remainingTime;
+                showDashboard();
+                loadDashboardData();
+                startSessionTimer();
+            }
+        });
+
+        function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            if (!username || !password) {
+                errorMsg.textContent = '❌ Please enter username and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            // Validate credentials
+            if (VALID_CREDENTIALS[username] && VALID_CREDENTIALS[username].password === password) {
+                currentExamId = VALID_CREDENTIALS[username].examId;
+                currentExamName = VALID_CREDENTIALS[username].examName;
+                remainingTime = SESSION_DURATION;
+
+                sessionStorage.setItem('dashboardSession', JSON.stringify({
+                    examId: currentExamId,
+                    examName: currentExamName,
+                    remainingTime: remainingTime
+                }));
+
+                successMsg.textContent = '✅ Login successful! Loading dashboard...';
+                successMsg.style.display = 'block';
+
+                setTimeout(() => {
+                    showDashboard();
+                    loadDashboardData();
+                    startSessionTimer();
+                }, 500);
+            } else {
+                errorMsg.textContent = '❌ Invalid username or password';
+                errorMsg.style.display = 'block';
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'flex';
+            document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+        }
+
+        function loadDashboardData() {
+            const data = MOCK_DATA[currentExamId];
+            if (!data) return;
+
+            // Update stats
+            const totalCandidates = data.candidates.length;
+            const presentCount = data.candidates.filter(c => c.present === 'Yes').length;
+            const absentCount = data.candidates.filter(c => c.present === 'No').length;
+            const verifiedCount = data.candidates.filter(c => c.verified === 'Yes').length;
+
+            document.getElementById('totalCandidates').textContent = totalCandidates;
+            document.getElementById('presentCount').textContent = presentCount;
+            document.getElementById('absentCount').textContent = absentCount;
+            document.getElementById('verifiedCount').textContent = verifiedCount;
+
+            // Update reports
+            document.getElementById('reportTotal').textContent = totalCandidates;
+            document.getElementById('reportPresent').textContent = presentCount;
+            document.getElementById('reportAbsent').textContent = absentCount;
+            document.getElementById('reportVerified').textContent = verifiedCount;
+            document.getElementById('reportPresentPct').textContent = totalCandidates > 0 ? ((presentCount / totalCandidates) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('reportAbsentPct').textContent = totalCandidates > 0 ? ((absentCount / totalCandidates) * 100).toFixed(1) + '%' : '0%';
+            document.getElementById('reportVerifiedPct').textContent = totalCandidates > 0 ? ((verifiedCount / totalCandidates) * 100).toFixed(1) + '%' : '0%';
+
+            // Load operators
+            const operatorsList = document.getElementById('operatorsList');
+            operatorsList.innerHTML = data.operators.map(op => `
+                <tr>
+                    <td>${op.name}</td>
+                    <td>${op.phone}</td>
+                    <td>${op.aadhaar}</td>
+                    <td>${op.centre}</td>
+                    <td>${op.selfie}</td>
+                </tr>
+            `).join('');
+
+            // Load candidates
+            const candidatesList = document.getElementById('candidatesList');
+            candidatesList.innerHTML = data.candidates.map(c => `
+                <tr>
+                    <td>${c.centre}</td>
+                    <td>${c.name}</td>
+                    <td>${c.father}</td>
+                    <td>${c.dob}</td>
+                    <td>${c.omr}</td>
+                    <td><span class="badge ${c.present === 'Yes' ? 'badge-success' : 'badge-danger'}">${c.present}</span></td>
+                    <td><span class="badge ${c.verified === 'Yes' ? 'badge-success' : 'badge-warning'}">${c.verified}</span></td>
+                </tr>
+            `).join('');
+
+            // Load centres
+            const centresList = document.getElementById('centresList');
+            centresList.innerHTML = data.centres.map(c => `
+                <tr>
+                    <td>${c.code}</td>
+                    <td>${c.name}</td>
+                    <td>${c.total}</td>
+                    <td><span class="badge badge-success">${c.present}</span></td>
+                    <td><span class="badge badge-danger">${c.absent}</span></td>
+                    <td><span class="badge badge-info">${c.verified}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.dashboard-sidebar-item').forEach(item => item.classList.remove('active'));
+
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function filterOperators() {
+            // Simple filter implementation
+            console.log('Filter operators');
+        }
+
+        function filterCandidates() {
+            // Simple filter implementation
+            console.log('Filter candidates');
+        }
+
+        function startSessionTimer() {
+            setInterval(() => {
+                remainingTime--;
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                document.getElementById('sessionTimer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (remainingTime <= 0) {
+                    handleLogout();
+                }
+            }, 1000);
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('dashboardSession');
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('dashboardPage').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+    </script>
+</body>
+</html>
