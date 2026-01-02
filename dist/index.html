@@ -730,7 +730,7 @@
         function updateAllTabs() { updateDashboard(); }
         
         function createDashboard(examName, username, password) {
-            const dashboardUrl = 'https://sepl-admin-portal.s3-website.ap-south-1.amazonaws.com/exam-dashboard.html';
+            const dashboardUrl = 'http://13.204.65.158:8080/dashboard';
             document.getElementById('dashboardExamName').textContent = 'Exam: ' + examName;
             document.getElementById('dashboardUsername').textContent = username;
             document.getElementById('dashboardPassword').textContent = password;
