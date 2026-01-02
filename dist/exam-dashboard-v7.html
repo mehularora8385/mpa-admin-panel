@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Exam Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        
+        /* LOGIN PAGE */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { color: #0d7377; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn-login { width: 100%; padding: 12px; background: #0d7377; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-login:hover { background: #0a5a66; }
+        .error-msg { color: #e74c3c; margin-bottom: 20px; padding: 12px; background: #f8d7da; border-radius: 4px; display: none; border-left: 4px solid #e74c3c; }
+        .success-msg { color: #27ae60; margin-bottom: 20px; padding: 12px; background: #d4edda; border-radius: 4px; display: none; border-left: 4px solid #27ae60; }
+        
+        /* DASHBOARD PAGE */
+        .dashboard-container { display: flex; height: 100vh; }
+        .dashboard-sidebar { width: 200px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 20px 0; overflow-y: auto; }
+        .dashboard-sidebar-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; font-weight: bold; transition: 0.3s; }
+        .dashboard-sidebar-item:hover { background: rgba(0,0,0,0.2); }
+        .dashboard-sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .dashboard-main { flex: 1; display: flex; flex-direction: column; }
+        .dashboard-header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { font-size: 22px; }
+        .dashboard-header-controls { display: flex; gap: 10px; align-items: center; }
+        .sync-status { padding: 8px 16px; background: #27ae60; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .sync-status.syncing { background: #f39c12; }
+        .session-timer { padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .btn-logout { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-logout:hover { background: #c0392b; }
+        .dashboard-content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid #0d7377; }
+        .stat-number { font-size: 36px; font-weight: bold; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; }
+        
+        /* TABLES */
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; font-weight: bold; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: bold; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        
+        /* BADGES */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-align: center; min-width: 50px; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0d7377; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>📊 Real-time Exam Dashboard</h1>
+            <p>Enter your exam credentials to access live exam data</p>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="success-msg" id="successMsg"></div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="Enter username">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="Enter password">
+            </div>
+            <button class="btn-login" onclick="handleLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
+        <!-- SIDEBAR -->
+        <div class="dashboard-sidebar">
+            <div class="dashboard-sidebar-item active" onclick="switchTab('overview')">📊 Overview</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('operators')">👥 Operators</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('candidates')">👨‍🎓 Candidates</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('centres')">🏢 Centres</div>
+            <div class="dashboard-sidebar-item" onclick="switchTab('reports')">📈 Reports</div>
+        </div>
+
+        <!-- MAIN CONTENT -->
+        <div class="dashboard-main">
+            <!-- HEADER -->
+            <div class="dashboard-header">
+                <h1 id="dashboardTitle">Live Exam Dashboard</h1>
+                <div class="dashboard-header-controls">
+                    <div class="sync-status" id="syncStatus">✅ Synced</div>
+                    <div class="session-timer" id="sessionTimer">5:00</div>
+                    <button class="btn-logout" onclick="handleLogout()">Logout</button>
+                </div>
+            </div>
+
+            <!-- CONTENT -->
+            <div class="dashboard-content">
+                <!-- OVERVIEW TAB -->
+                <div id="overview" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCandidates">-</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="presentCount">-</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="absentCount">-</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="verifiedCount">-</div>
+                            <div class="stat-label">Verified</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre-wise Operators</h3>
+                        <div class="table-controls">
+                            <select id="operatorCentreFilter" onchange="filterOperators()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="operatorSearch" placeholder="Search by name..." onkeyup="filterOperators()">
+                        </div>
+                        <table id="operatorsTable">
+                            <thead>
+                                <tr>
+                                    <th>Operator Name</th>
+                                    <th>Phone</th>
+                                    <th>Aadhaar</th>
+                                    <th>Centre Code</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operatorsList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>Candidate Details</h3>
+                        <div class="table-controls">
+                            <select id="candidateCentreFilter" onchange="filterCandidates()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="candidateSearch" placeholder="Search by name..." onkeyup="filterCandidates()">
+                        </div>
+                        <table id="candidatesTable">
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Student Name</th>
+                                    <th>Father Name</th>
+                                    <th>DOB</th>
+                                    <th>OMR No.</th>
+                                    <th>Present</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidatesList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre Summary</h3>
+                        <table id="centresTable">
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Centre Name</th>
+                                    <th>Total Candidates</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centresList"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Report</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Total Candidates</td>
+                                    <td id="reportTotal">-</td>
+                                    <td>100%</td>
+                                </tr>
+                                <tr>
+                                    <td>Present</td>
+                                    <td id="reportPresent">-</td>
+                                    <td id="reportPresentPct">0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Absent</td>
+                                    <td id="reportAbsent">-</td>
+                                    <td id="reportAbsentPct">0%</td>
+                                </tr>
+                                <tr>
+                                    <td>Verified</td>
+                                    <td id="reportVerified">-</td>
+                                    <td id="reportVerifiedPct">0%</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = 'http://13.204.65.158:3001';
+        
+        let currentExamId = null;
+        let currentExamName = null;
+        let remainingTime = 300;
+        const SESSION_DURATION = 300;
+        let allOperators = [];
+        let allCandidates = [];
+        let allCentres = [];
+
+        // Check if session exists on page load
+        window.addEventListener('load', () => {
+            const session = sessionStorage.getItem('dashboardSession');
+            if (session) {
+                const data = JSON.parse(session);
+                currentExamId = data.examId;
+                currentExamName = data.examName;
+                remainingTime = data.remainingTime;
+                showDashboard();
+                loadDashboardData();
+                startSessionTimer();
+            }
+        });
+
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            if (!username || !password) {
+                errorMsg.textContent = '❌ Please enter username and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/validate-credentials`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentExamId = data.examId;
+                    currentExamName = data.examName;
+                    remainingTime = SESSION_DURATION;
+
+                    sessionStorage.setItem('dashboardSession', JSON.stringify({
+                        examId: currentExamId,
+                        examName: currentExamName,
+                        remainingTime: remainingTime
+                    }));
+
+                    successMsg.textContent = '✅ Login successful! Loading dashboard...';
+                    successMsg.style.display = 'block';
+
+                    setTimeout(() => {
+                        showDashboard();
+                        loadDashboardData();
+                        startSessionTimer();
+                    }, 500);
+                } else {
+                    errorMsg.textContent = '❌ ' + (data.message || 'Invalid credentials');
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                errorMsg.textContent = '❌ Connection error. Please check if backend API is running.';
+                errorMsg.style.display = 'block';
+                console.error('Login error:', error);
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'flex';
+            document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load stats
+                const statsResponse = await fetch(`${API_URL}/api/dashboard/stats?examId=${currentExamId}`);
+                const statsData = await statsResponse.json();
+                if (statsData.success) {
+                    document.getElementById('totalCandidates').textContent = statsData.stats.total || 0;
+                    document.getElementById('presentCount').textContent = statsData.stats.present || 0;
+                    document.getElementById('absentCount').textContent = statsData.stats.absent || 0;
+                    document.getElementById('verifiedCount').textContent = statsData.stats.verified || 0;
+
+                    document.getElementById('reportTotal').textContent = statsData.stats.total || 0;
+                    document.getElementById('reportPresent').textContent = statsData.stats.present || 0;
+                    document.getElementById('reportAbsent').textContent = statsData.stats.absent || 0;
+                    document.getElementById('reportVerified').textContent = statsData.stats.verified || 0;
+
+                    const total = statsData.stats.total || 1;
+                    document.getElementById('reportPresentPct').textContent = ((statsData.stats.present / total) * 100).toFixed(1) + '%';
+                    document.getElementById('reportAbsentPct').textContent = ((statsData.stats.absent / total) * 100).toFixed(1) + '%';
+                    document.getElementById('reportVerifiedPct').textContent = ((statsData.stats.verified / total) * 100).toFixed(1) + '%';
+                }
+
+                // Load operators
+                const operatorsResponse = await fetch(`${API_URL}/api/dashboard/operators?examId=${currentExamId}`);
+                const operatorsData = await operatorsResponse.json();
+                if (operatorsData.success) {
+                    allOperators = operatorsData.operators || [];
+                    renderOperators();
+                }
+
+                // Load candidates
+                const candidatesResponse = await fetch(`${API_URL}/api/dashboard/candidates?examId=${currentExamId}`);
+                const candidatesData = await candidatesResponse.json();
+                if (candidatesData.success) {
+                    allCandidates = candidatesData.candidates || [];
+                    renderCandidates();
+                }
+
+                // Load centres
+                const centresResponse = await fetch(`${API_URL}/api/dashboard/centres?examId=${currentExamId}`);
+                const centresData = await centresResponse.json();
+                if (centresData.success) {
+                    allCentres = centresData.centres || [];
+                    renderCentres();
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+                document.getElementById('syncStatus').textContent = '❌ Sync failed';
+                document.getElementById('syncStatus').classList.add('syncing');
+            }
+        }
+
+        function renderOperators() {
+            const tbody = document.getElementById('operatorsList');
+            tbody.innerHTML = allOperators.map(op => `
+                <tr>
+                    <td>${op.operator_name || '-'}</td>
+                    <td>${op.phone_number || '-'}</td>
+                    <td>${op.aadhaar_number || '-'}</td>
+                    <td>${op.centre_code || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCandidates() {
+            const tbody = document.getElementById('candidatesList');
+            tbody.innerHTML = allCandidates.map(c => `
+                <tr>
+                    <td>${c.centre_code || '-'}</td>
+                    <td>${c.candidate_name || '-'}</td>
+                    <td>${c.father_name || '-'}</td>
+                    <td>${c.date_of_birth || '-'}</td>
+                    <td>${c.omr_number || '-'}</td>
+                    <td><span class="badge ${c.present === 'present' ? 'badge-success' : 'badge-danger'}">${c.present === 'present' ? 'Yes' : 'No'}</span></td>
+                    <td><span class="badge ${c.verified === 'verified' ? 'badge-success' : 'badge-warning'}">${c.verified === 'verified' ? 'Yes' : 'No'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function renderCentres() {
+            const tbody = document.getElementById('centresList');
+            tbody.innerHTML = allCentres.map(c => `
+                <tr>
+                    <td>${c.centre_code || '-'}</td>
+                    <td>${c.centre_name || '-'}</td>
+                    <td>${c.total_candidates || 0}</td>
+                    <td><span class="badge badge-success">${c.present_count || 0}</span></td>
+                    <td><span class="badge badge-danger">${c.absent_count || 0}</span></td>
+                    <td><span class="badge badge-info">${c.verified_count || 0}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.dashboard-sidebar-item').forEach(item => item.classList.remove('active'));
+
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        function filterOperators() {
+            // Filter implementation
+        }
+
+        function filterCandidates() {
+            // Filter implementation
+        }
+
+        function startSessionTimer() {
+            setInterval(() => {
+                remainingTime--;
+                const minutes = Math.floor(remainingTime / 60);
+                const seconds = remainingTime % 60;
+                document.getElementById('sessionTimer').textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+
+                if (remainingTime <= 0) {
+                    handleLogout();
+                }
+            }, 1000);
+        }
+
+        function handleLogout() {
+            sessionStorage.removeItem('dashboardSession');
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('dashboardPage').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+    </script>
+</body>
+</html>
