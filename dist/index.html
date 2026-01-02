@@ -132,7 +132,7 @@
                     <div class="table-section" style="margin-top: 20px;">
                         <h3>EXAM LIST</h3>
                         <table>
-                            <thead><tr><th>Exam Name</th><th>Status</th><th>Date</th><th>Slots</th><th>Total Candidates</th><th>Mock Control</th><th>Exam Control</th><th>Actions</th></tr></thead>
+                            <thead><tr><th>Exam Name</th><th>Status</th><th>Date</th><th>Slots</th><th>Total Candidates</th><th>Mock Control</th><th>Exam Control</th><th>Dashboard</th><th>Actions</th></tr></thead>
                             <tbody id="examsTableBody"></tbody>
                         </table>
                     </div>
@@ -455,7 +455,11 @@
                 const overallStatus = state.mockStatus === 'Active' || state.examStatus === 'Active' ? 'Active' : 'Inactive';
                 const statusBadge = overallStatus === 'Active' ? 'badge-success' : 'badge-warning';
                 
-                return `<tr><td>${exam.name}</td><td><span class="badge ${statusBadge}">${overallStatus}</span></td><td>${exam.date}</td><td>${exam.slots.length}</td><td>${exam.totalCandidates}</td><td><button class="btn ${mockBtnClass}" onclick="toggleMockStatus('${id}')">${mockBtnText}</button></td><td><button class="btn ${examBtnClass}" onclick="toggleExamStatus('${id}')">${examBtnText}</button></td><td><button class="btn btn-primary" onclick="editExam('${id}')">✏️ Edit</button> <button class="btn btn-warning" onclick="openUploadModal('${id}')">📤 Upload</button></td></tr>`;
+                const examMap = { exam_a: 'exam_a', exam_b: 'exam_b', mock_1: 'mock_1' };
+                const examKey = examMap[id] || id;
+                const dashboardUsername = examKey + '_user';
+                const dashboardPassword = examKey + '_pass';
+                return `<tr><td>${exam.name}</td><td><span class="badge ${statusBadge}">${overallStatus}</span></td><td>${exam.date}</td><td>${exam.slots.length}</td><td>${exam.totalCandidates}</td><td><button class="btn ${mockBtnClass}" onclick="toggleMockStatus('${id}')">${mockBtnText}</button></td><td><button class="btn ${examBtnClass}" onclick="toggleExamStatus('${id}')">${examBtnText}</button></td><td><button class="btn btn-success" onclick="createDashboard('${exam.name}', '${dashboardUsername}', '${dashboardPassword}')">📊 Create</button></td><td><button class="btn btn-primary" onclick="editExam('${id}')">✏️ Edit</button> <button class="btn btn-warning" onclick="openUploadModal('${id}')">📤 Upload</button></td></tr>`;
             });
             document.getElementById('examsTableBody').innerHTML = exams.join('');
         }
@@ -541,33 +545,17 @@
         function filterCandidates() {
             const exam = document.getElementById('candExamFilter').value;
             const centre = document.getElementById('candCentreFilter').value;
-            const statusFilter = document.getElementById('candStatusFilter').value;
             const search = document.getElementById('candSearch').value.toLowerCase();
             
-            const filtered = mockData.candidates.filter(cand => {
-                const matchesExam = !exam || cand.exam === exam;
-                const matchesCentre = !centre || cand.centre === centre;
-                const matchesSearch = cand.name.toLowerCase().includes(search) || cand.roll.toLowerCase().includes(search);
-                
-                let matchesStatus = true;
-                if (statusFilter) {
-                    if (statusFilter === 'present_yes_verify_yes') {
-                        matchesStatus = cand.present === 'Yes' && cand.verified === 'Yes';
-                    } else if (statusFilter === 'present_yes_verify_no') {
-                        matchesStatus = cand.present === 'Yes' && cand.verified === 'No';
-                    } else if (statusFilter === 'present_no_verify_no') {
-                        matchesStatus = cand.present === 'No' && cand.verified === 'No';
-                    }
-                }
-                
-                return matchesExam && matchesCentre && matchesSearch && matchesStatus;
-            });
+            const filtered = mockData.candidates.filter(cand => 
+                (!exam || cand.exam === exam) &&
+                (!centre || cand.centre === centre) &&
+                (cand.name.toLowerCase().includes(search) || cand.roll.toLowerCase().includes(search))
+            );
             
             const tbody = document.getElementById('candidatesTableBody');
-            tbody.innerHTML = filtered.map(cand => `<tr><td>${cand.name}</td><td>${cand.roll}</td><td>${cand.exam}</td><td>${cand.centre}</td><td>Slot ${cand.slot}</td><td>Present=${cand.present}, Verification=${cand.verified}</td></tr>`).join('');
+            tbody.innerHTML = filtered.map(cand => `<tr><td>${cand.name}</td><td>${cand.roll}</td><td>${cand.exam}</td><td>${cand.centre}</td><td>Slot ${cand.slot}</td><td><span class="badge ${cand.biometric === 'Captured' ? 'badge-success' : 'badge-warning'}">${cand.biometric}</span></td></tr>`).join('');
         }
-
-
 
         function downloadReport(type) {
             let data = [];
@@ -740,9 +728,66 @@
         function logoutAll() { if (confirm('Logout all?')) alert('✅ All logged out'); }
         function logout() { if (confirm('Logout?')) alert('✅ Logged out'); }
         function updateAllTabs() { updateDashboard(); }
+        
+        function createDashboard(examName, username, password) {
+            const dashboardUrl = 'https://sepl-admin-portal.s3-website.ap-south-1.amazonaws.com/exam-dashboard.html';
+            document.getElementById('dashboardExamName').textContent = 'Exam: ' + examName;
+            document.getElementById('dashboardUsername').textContent = username;
+            document.getElementById('dashboardPassword').textContent = password;
+            document.getElementById('dashboardLink').textContent = dashboardUrl;
+            document.getElementById('dashboardLink').href = dashboardUrl;
+            openModal('dashboardModal');
+        }
+        
+        function copyDashboardLink() {
+            const url = document.getElementById('dashboardLink').textContent;
+            navigator.clipboard.writeText(url).then(() => {
+                alert('✅ Link copied to clipboard!');
+            }).catch(() => {
+                alert('URL: ' + url);
+            });
+        }
+        
+        function openDashboardLink() {
+            const url = document.getElementById('dashboardLink').href;
+            window.open(url, '_blank');
+        }
 
         updateDashboard();
         renderExamsTable();
     </script>
+    
+    <!-- DASHBOARD CREDENTIALS MODAL -->
+    <div id="dashboardModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
+            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #0d7377; padding-bottom: 15px;">
+                <h2 style="color: #0d7377; font-size: 18px;">📊 Dashboard Credentials</h2>
+                <span class="close-btn" onclick="closeModal('dashboardModal')" style="font-size: 28px; cursor: pointer; color: #999;">&times;</span>
+            </div>
+            <div style="background: #d4edda; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
+                <p style="color: #155724; font-weight: 600; margin-bottom: 10px;">✅ Dashboard Created Successfully!</p>
+                <p id="dashboardExamName" style="color: #155724; font-size: 14px; margin: 0;"></p>
+            </div>
+            <div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
+                <p style="color: #333; font-weight: 600; margin-bottom: 10px;">📝 Login Credentials:</p>
+                <div style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ddd;">
+                    <p style="margin: 5px 0; color: #666;"><strong>Username:</strong> <span id="dashboardUsername" style="color: #0d7377; font-weight: 600;"></span></p>
+                    <p style="margin: 5px 0; color: #666;"><strong>Password:</strong> <span id="dashboardPassword" style="color: #0d7377; font-weight: 600;"></span></p>
+                </div>
+            </div>
+            <div style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #0d7377;">
+                <p style="color: #0d7377; font-weight: 600; margin-bottom: 10px;">🔗 Dashboard Link:</p>
+                <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #0d7377; word-break: break-all;">
+                    <a id="dashboardLink" href="" target="_blank" style="color: #0d7377; text-decoration: underline; font-weight: 600; cursor: pointer;"></a>
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-primary" onclick="copyDashboardLink()" style="padding: 10px 20px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📋 Copy Link</button>
+                <button class="btn btn-success" onclick="openDashboardLink()" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔗 Open Dashboard</button>
+                <button class="btn btn-secondary" onclick="closeModal('dashboardModal')" style="padding: 10px 20px; background: #999; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+        </div>
+    </div>
+
 </body>
 </html>

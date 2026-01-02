@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam-wise Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { color: #0d7377; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: 600; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; }
+        .btn-login { width: 100%; padding: 12px; background: #0d7377; color: white; border: none; border-radius: 4px; font-weight: 600; cursor: pointer; }
+        .btn-login:hover { background: #0a5a66; }
+        .error-msg { color: #e74c3c; margin-bottom: 20px; padding: 12px; background: #f8d7da; border-radius: 4px; display: none; }
+        
+        .dashboard-container { display: flex; height: 100vh; }
+        .dashboard-sidebar { width: 200px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 0; overflow-y: auto; }
+        .dashboard-sidebar-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; font-weight: 600; transition: 0.3s; }
+        .dashboard-sidebar-item:hover, .dashboard-sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .dashboard-main { flex: 1; display: flex; flex-direction: column; }
+        .dashboard-header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { font-size: 22px; }
+        .dashboard-header button { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        .dashboard-content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid #0d7377; }
+        .stat-number { font-size: 36px; font-weight: 700; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; }
+        
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: 700; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>📊 Exam Dashboard</h1>
+            <p>Enter your credentials to access exam data</p>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="exam_a_user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="exam_a_pass">
+            </div>
+            <button class="btn-login" onclick="handleLogin()">Login</button>
+            <p style="margin-top: 20px; text-align: center; color: #999; font-size: 12px;">
+                <strong>Test Credentials:</strong><br>
+                exam_a_user / exam_a_pass<br>
+                exam_b_user / exam_b_pass<br>
+                mock_user / mock_pass
+            </p>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
+        <div class="dashboard-sidebar">
+            <div class="dashboard-sidebar-item active" onclick="showTab('overview', this)">📊 OVERVIEW</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('candidates', this)">👥 CANDIDATES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('operators', this)">👨‍💼 OPERATORS</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('centres', this)">🏢 CENTRES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('slots', this)">⏰ SLOTS</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('reports', this)">📈 REPORTS</div>
+        </div>
+
+        <div class="dashboard-main">
+            <div class="dashboard-header">
+                <h1 id="examTitle">Dashboard</h1>
+                <button onclick="handleLogout()">🚪 Logout</button>
+            </div>
+
+            <div class="dashboard-content">
+                <!-- OVERVIEW TAB -->
+                <div id="overview" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCandidates">0</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="presentCount">0</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="absentCount">0</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="verifiedCount">0</div>
+                            <div class="stat-label">Verified</div>
+                        </div>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalOperators">0</div>
+                            <div class="stat-label">Total Operators</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCentres">0</div>
+                            <div class="stat-label">Total Centres</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalSlots">0</div>
+                            <div class="stat-label">Total Slots</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalDevices">0</div>
+                            <div class="stat-label">Total Devices</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>Candidates List</h3>
+                        <div class="table-controls">
+                            <select id="candidateCentreFilter" onchange="filterCandidates()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="candidateSearch" placeholder="Search by name or roll" onkeyup="filterCandidates()">
+                        </div>
+                        <table>
+                            <thead><tr><th>Roll Number</th><th>Name</th><th>Centre</th><th>Slot</th><th>Present</th><th>Verified</th></tr></thead>
+                            <tbody id="candidatesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-section">
+                        <h3>Operators List</h3>
+                        <div class="table-controls">
+                            <select id="operatorCentreFilter" onchange="filterOperators()">
+                                <option value="">All Centres</option>
+                            </select>
+                        </div>
+                        <table>
+                            <thead><tr><th>Operator ID</th><th>Name</th><th>Phone</th><th>Centre</th><th>Status</th></tr></thead>
+                            <tbody id="operatorsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centres List</h3>
+                        <table>
+                            <thead><tr><th>Centre Code</th><th>Centre Name</th><th>Location</th><th>Candidates</th><th>Operators</th></tr></thead>
+                            <tbody id="centresTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SLOTS TAB -->
+                <div id="slots" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Slots</h3>
+                        <table>
+                            <thead><tr><th>Slot ID</th><th>Time</th><th>Candidates</th><th>Present</th><th>Absent</th></tr></thead>
+                            <tbody id="slotsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Report</h3>
+                        <table>
+                            <thead><tr><th>Metric</th><th>Value</th><th>Percentage</th></tr></thead>
+                            <tbody id="reportsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const dashboardData = {
+            'exam_a_user': {
+                password: 'exam_a_pass',
+                examName: 'Exam A',
+                examId: 1,
+                candidates: [
+                    { roll: '11000001', name: 'Candidate 1', centre: 'C0001', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '11000002', name: 'Candidate 2', centre: 'C0001', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '11000003', name: 'Candidate 3', centre: 'C0002', slot: '02:00-04:30', present: false, verified: false },
+                    { roll: '11000004', name: 'Candidate 4', centre: 'C0002', slot: '02:00-04:30', present: true, verified: false },
+                    { roll: '11000005', name: 'Candidate 5', centre: 'C0003', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '11000006', name: 'Candidate 6', centre: 'C0001', slot: '02:00-04:30', present: true, verified: true },
+                    { roll: '11000007', name: 'Candidate 7', centre: 'C0003', slot: '02:00-04:30', present: false, verified: false },
+                    { roll: '11000008', name: 'Candidate 8', centre: 'C0002', slot: '09:00-11:30', present: true, verified: true },
+                ],
+                operators: [
+                    { id: 'OP001', name: 'Operator 1', phone: '9876543210', centre: 'C0001', status: 'Active' },
+                    { id: 'OP002', name: 'Operator 2', phone: '9876543211', centre: 'C0002', status: 'Active' },
+                    { id: 'OP003', name: 'Operator 3', phone: '9876543212', centre: 'C0003', status: 'Inactive' },
+                ],
+                centres: [
+                    { code: 'C0001', name: 'Main Centre', location: 'City Center' },
+                    { code: 'C0002', name: 'Subsidiary Centre', location: 'North Wing' },
+                    { code: 'C0003', name: 'Exam Centre 3', location: 'South Wing' },
+                ],
+                slots: [
+                    { id: 'S001', time: '09:00-11:30' },
+                    { id: 'S002', time: '02:00-04:30' },
+                ]
+            },
+            'exam_b_user': {
+                password: 'exam_b_pass',
+                examName: 'Exam B',
+                examId: 2,
+                candidates: [
+                    { roll: '12000001', name: 'Candidate A', centre: 'C0001', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '12000002', name: 'Candidate B', centre: 'C0002', slot: '02:00-04:30', present: true, verified: false },
+                    { roll: '12000003', name: 'Candidate C', centre: 'C0003', slot: '09:00-11:30', present: false, verified: false },
+                ],
+                operators: [
+                    { id: 'OP004', name: 'Operator 4', phone: '9876543213', centre: 'C0001', status: 'Active' },
+                    { id: 'OP005', name: 'Operator 5', phone: '9876543214', centre: 'C0002', status: 'Active' },
+                ],
+                centres: [
+                    { code: 'C0001', name: 'Main Centre', location: 'City Center' },
+                    { code: 'C0002', name: 'Subsidiary Centre', location: 'North Wing' },
+                    { code: 'C0003', name: 'Exam Centre 3', location: 'South Wing' },
+                ],
+                slots: [
+                    { id: 'S001', time: '09:00-11:30' },
+                    { id: 'S002', time: '02:00-04:30' },
+                ]
+            },
+            'mock_user': {
+                password: 'mock_pass',
+                examName: 'Mock Exam 1',
+                examId: 3,
+                candidates: [
+                    { roll: '13000001', name: 'Mock Candidate 1', centre: 'C0001', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '13000002', name: 'Mock Candidate 2', centre: 'C0001', slot: '09:00-11:30', present: true, verified: true },
+                    { roll: '13000003', name: 'Mock Candidate 3', centre: 'C0002', slot: '02:00-04:30', present: true, verified: false },
+                ],
+                operators: [
+                    { id: 'OP006', name: 'Mock Operator 1', phone: '9876543215', centre: 'C0001', status: 'Active' },
+                ],
+                centres: [
+                    { code: 'C0001', name: 'Main Centre', location: 'City Center' },
+                    { code: 'C0002', name: 'Subsidiary Centre', location: 'North Wing' },
+                ],
+                slots: [
+                    { id: 'S001', time: '09:00-11:30' },
+                    { id: 'S002', time: '02:00-04:30' },
+                ]
+            }
+        };
+
+        let currentUser = null;
+        let currentData = null;
+
+        function handleLogin() {
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            const errorMsg = document.getElementById('errorMsg');
+
+            const user = dashboardData[username];
+            if (!user || user.password !== password) {
+                errorMsg.textContent = '❌ Invalid credentials';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            currentUser = username;
+            currentData = user;
+            errorMsg.style.display = 'none';
+
+            document.getElementById('loginPage').style.display = 'none';
+            document.getElementById('dashboardPage').style.display = 'flex';
+            document.getElementById('examTitle').textContent = user.examName + ' Dashboard';
+
+            loadDashboardData();
+        }
+
+        function handleLogout() {
+            currentUser = null;
+            currentData = null;
+            document.getElementById('loginPage').style.display = 'flex';
+            document.getElementById('dashboardPage').style.display = 'none';
+            document.getElementById('username').value = '';
+            document.getElementById('password').value = '';
+        }
+
+        function showTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.dashboard-sidebar-item').forEach(item => item.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function loadDashboardData() {
+            const candidates = currentData.candidates;
+            const presentCount = candidates.filter(c => c.present).length;
+            const absentCount = candidates.filter(c => !c.present).length;
+            const verifiedCount = candidates.filter(c => c.verified).length;
+            const operators = currentData.operators;
+            const centres = currentData.centres;
+            const slots = currentData.slots;
+
+            document.getElementById('totalCandidates').textContent = candidates.length;
+            document.getElementById('presentCount').textContent = presentCount;
+            document.getElementById('absentCount').textContent = absentCount;
+            document.getElementById('verifiedCount').textContent = verifiedCount;
+            document.getElementById('totalOperators').textContent = operators.length;
+            document.getElementById('totalCentres').textContent = centres.length;
+            document.getElementById('totalSlots').textContent = slots.length;
+            document.getElementById('totalDevices').textContent = (operators.length * 2);
+
+            loadCandidates();
+            loadOperators();
+            loadCentres();
+            loadSlots();
+            loadReports();
+        }
+
+        function loadCandidates() {
+            const tbody = document.getElementById('candidatesTableBody');
+            const centreFilter = document.getElementById('candidateCentreFilter');
+            
+            // Populate centre filter
+            centreFilter.innerHTML = '<option value="">All Centres</option>';
+            currentData.centres.forEach(c => {
+                centreFilter.innerHTML += `<option value="${c.code}">${c.name}</option>`;
+            });
+
+            filterCandidates();
+        }
+
+        function filterCandidates() {
+            const tbody = document.getElementById('candidatesTableBody');
+            const centreFilter = document.getElementById('candidateCentreFilter').value;
+            const searchFilter = document.getElementById('candidateSearch').value.toLowerCase();
+
+            let filtered = currentData.candidates;
+            if (centreFilter) {
+                filtered = filtered.filter(c => c.centre === centreFilter);
+            }
+            if (searchFilter) {
+                filtered = filtered.filter(c => c.name.toLowerCase().includes(searchFilter) || c.roll.includes(searchFilter));
+            }
+
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td>${c.roll}</td>
+                    <td>${c.name}</td>
+                    <td>${c.centre}</td>
+                    <td>${c.slot}</td>
+                    <td><span class="badge ${c.present ? 'badge-success' : 'badge-danger'}">${c.present ? 'Yes' : 'No'}</span></td>
+                    <td><span class="badge ${c.verified ? 'badge-success' : 'badge-warning'}">${c.verified ? 'Yes' : 'Pending'}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function loadOperators() {
+            const tbody = document.getElementById('operatorsTableBody');
+            const centreFilter = document.getElementById('operatorCentreFilter');
+            
+            // Populate centre filter
+            centreFilter.innerHTML = '<option value="">All Centres</option>';
+            currentData.centres.forEach(c => {
+                centreFilter.innerHTML += `<option value="${c.code}">${c.name}</option>`;
+            });
+
+            filterOperators();
+        }
+
+        function filterOperators() {
+            const tbody = document.getElementById('operatorsTableBody');
+            const centreFilter = document.getElementById('operatorCentreFilter').value;
+
+            let filtered = currentData.operators;
+            if (centreFilter) {
+                filtered = filtered.filter(o => o.centre === centreFilter);
+            }
+
+            tbody.innerHTML = filtered.map(o => `
+                <tr>
+                    <td>${o.id}</td>
+                    <td>${o.name}</td>
+                    <td>${o.phone}</td>
+                    <td>${o.centre}</td>
+                    <td><span class="badge ${o.status === 'Active' ? 'badge-success' : 'badge-danger'}">${o.status}</span></td>
+                </tr>
+            `).join('');
+        }
+
+        function loadCentres() {
+            const tbody = document.getElementById('centresTableBody');
+            tbody.innerHTML = currentData.centres.map(c => {
+                const candCount = currentData.candidates.filter(cand => cand.centre === c.code).length;
+                const opCount = currentData.operators.filter(op => op.centre === c.code).length;
+                return `
+                    <tr>
+                        <td>${c.code}</td>
+                        <td>${c.name}</td>
+                        <td>${c.location}</td>
+                        <td>${candCount}</td>
+                        <td>${opCount}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadSlots() {
+            const tbody = document.getElementById('slotsTableBody');
+            tbody.innerHTML = currentData.slots.map(s => {
+                const slotCands = currentData.candidates.filter(c => c.slot === s.time);
+                const presentCount = slotCands.filter(c => c.present).length;
+                const absentCount = slotCands.filter(c => !c.present).length;
+                return `
+                    <tr>
+                        <td>${s.id}</td>
+                        <td>${s.time}</td>
+                        <td>${slotCands.length}</td>
+                        <td>${presentCount}</td>
+                        <td>${absentCount}</td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function loadReports() {
+            const tbody = document.getElementById('reportsTableBody');
+            const totalCands = currentData.candidates.length;
+            const presentCount = currentData.candidates.filter(c => c.present).length;
+            const verifiedCount = currentData.candidates.filter(c => c.verified).length;
+
+            tbody.innerHTML = `
+                <tr><td>Total Candidates</td><td>${totalCands}</td><td>100%</td></tr>
+                <tr><td>Present</td><td>${presentCount}</td><td>${((presentCount/totalCands)*100).toFixed(1)}%</td></tr>
+                <tr><td>Absent</td><td>${totalCands - presentCount}</td><td>${(((totalCands-presentCount)/totalCands)*100).toFixed(1)}%</td></tr>
+                <tr><td>Verified</td><td>${verifiedCount}</td><td>${((verifiedCount/totalCands)*100).toFixed(1)}%</td></tr>
+                <tr><td>Pending Verification</td><td>${totalCands - verifiedCount}</td><td>${(((totalCands-verifiedCount)/totalCands)*100).toFixed(1)}%</td></tr>
+            `;
+        }
+    </script>
+</body>
+</html>
