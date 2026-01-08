@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Real-time Exam Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; background: #f0f2f5; }
+        
+        /* LOGIN PAGE */
+        .login-container { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); }
+        .login-box { background: white; padding: 40px; border-radius: 8px; box-shadow: 0 10px 40px rgba(0,0,0,0.2); width: 100%; max-width: 400px; }
+        .login-box h1 { color: #0d7377; margin-bottom: 10px; font-size: 24px; }
+        .login-box p { color: #666; margin-bottom: 30px; font-size: 14px; }
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; margin-bottom: 8px; color: #333; font-weight: bold; }
+        .form-group input { width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; }
+        .btn-login { width: 100%; padding: 12px; background: #0d7377; color: white; border: none; border-radius: 4px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .btn-login:hover { background: #0a5a66; }
+        .btn-login:disabled { background: #999; }
+        .error-msg { color: #e74c3c; margin-bottom: 20px; padding: 12px; background: #f8d7da; border-radius: 4px; display: none; border-left: 4px solid #e74c3c; }
+        .success-msg { color: #27ae60; margin-bottom: 20px; padding: 12px; background: #d4edda; border-radius: 4px; display: none; border-left: 4px solid #27ae60; }
+        
+        /* DASHBOARD PAGE */
+        .dashboard-container { display: flex; height: 100vh; }
+        .dashboard-sidebar { width: 200px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 20px 0; overflow-y: auto; }
+        .dashboard-sidebar-item { padding: 15px 20px; cursor: pointer; border-left: 4px solid transparent; font-weight: bold; transition: 0.3s; }
+        .dashboard-sidebar-item:hover { background: rgba(0,0,0,0.2); }
+        .dashboard-sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .dashboard-main { flex: 1; display: flex; flex-direction: column; }
+        .dashboard-header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .dashboard-header h1 { font-size: 22px; }
+        .dashboard-header-controls { display: flex; gap: 10px; align-items: center; }
+        .sync-status { padding: 8px 16px; background: #27ae60; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .sync-status.syncing { background: #f39c12; }
+        .session-timer { padding: 8px 16px; background: #3498db; color: white; border-radius: 4px; font-size: 12px; font-weight: bold; }
+        .btn-logout { padding: 8px 16px; background: #e74c3c; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-logout:hover { background: #c0392b; }
+        .dashboard-content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; }
+        
+        /* STATS */
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid #0d7377; }
+        .stat-number { font-size: 36px; font-weight: bold; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; }
+        
+        /* TABLES */
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; font-weight: bold; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        
+        table { width: 100%; border-collapse: collapse; font-size: 12px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: bold; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        
+        /* BADGES */
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; text-align: center; min-width: 50px; }
+        .badge-success { background: #27ae60; color: white; }
+        .badge-danger { background: #e74c3c; color: white; }
+        .badge-warning { background: #f39c12; color: white; }
+        .badge-info { background: #3498db; color: white; }
+        
+        /* IMAGES */
+        .image-cell { max-width: 80px; max-height: 80px; cursor: pointer; border-radius: 4px; }
+        .image-modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 1000; justify-content: center; align-items: center; }
+        .image-modal.active { display: flex; }
+        .image-modal img { max-width: 90%; max-height: 90%; }
+        .image-modal .close { position: absolute; top: 20px; right: 40px; color: white; font-size: 40px; cursor: pointer; }
+        
+        .loading { text-align: center; padding: 40px; }
+        .spinner { display: inline-block; width: 40px; height: 40px; border: 4px solid #f3f3f3; border-top: 4px solid #0d7377; border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <!-- LOGIN PAGE -->
+    <div id="loginPage" class="login-container">
+        <div class="login-box">
+            <h1>📊 Real-time Exam Dashboard</h1>
+            <p>Enter your exam credentials to access live exam data</p>
+            <div class="error-msg" id="errorMsg"></div>
+            <div class="success-msg" id="successMsg"></div>
+            <div class="form-group">
+                <label>Username</label>
+                <input type="text" id="username" placeholder="exam_a_user">
+            </div>
+            <div class="form-group">
+                <label>Password</label>
+                <input type="password" id="password" placeholder="exam_a_pass">
+            </div>
+            <button class="btn-login" id="loginBtn" onclick="handleLogin()">Login</button>
+        </div>
+    </div>
+
+    <!-- DASHBOARD PAGE -->
+    <div id="dashboardPage" class="dashboard-container" style="display: none;">
+        <div class="dashboard-sidebar">
+            <div class="dashboard-sidebar-item active" onclick="showTab('overview', this)">📊 OVERVIEW</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('operators', this)">👤 OPERATORS</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('candidates', this)">👥 CANDIDATES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('centres', this)">🏢 CENTRES</div>
+            <div class="dashboard-sidebar-item" onclick="showTab('reports', this)">📈 REPORTS</div>
+        </div>
+
+        <div class="dashboard-main">
+            <div class="dashboard-header">
+                <h1 id="dashboardTitle">Live Exam Dashboard</h1>
+                <div class="dashboard-header-controls">
+                    <div class="sync-status" id="syncStatus">🔄 Syncing...</div>
+                    <div class="session-timer" id="sessionTimer">Session: 5:00</div>
+                    <button class="btn-logout" onclick="handleLogout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <div class="dashboard-content">
+                <!-- OVERVIEW TAB -->
+                <div id="overview" class="tab-content active">
+                    <div class="stats-row">
+                        <div class="stat-card">
+                            <div class="stat-number" id="totalCandidates">0</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="presentCount">0</div>
+                            <div class="stat-label">Present</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="absentCount">0</div>
+                            <div class="stat-label">Absent</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="verifiedCount">0</div>
+                            <div class="stat-label">Verified</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre-wise Operators</h3>
+                        <div class="table-controls">
+                            <select id="operatorCentreFilter" onchange="filterOperators()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="operatorSearch" placeholder="Search by name or phone" onkeyup="filterOperators()">
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Operator Name</th>
+                                    <th>Phone</th>
+                                    <th>Aadhaar</th>
+                                    <th>Selfie</th>
+                                </tr>
+                            </thead>
+                            <tbody id="operatorsTable">
+                                <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centre-wise Candidates</h3>
+                        <div class="table-controls">
+                            <select id="candidateCentreFilter" onchange="filterCandidates()">
+                                <option value="">All Centres</option>
+                            </select>
+                            <input type="text" id="candidateSearch" placeholder="Search by name or roll" onkeyup="filterCandidates()">
+                        </div>
+                        <div style="overflow-x: auto;">
+                            <table>
+                                <thead>
+                                    <tr>
+                                        <th>Centre Code</th>
+                                        <th>Student Name</th>
+                                        <th>Father Name</th>
+                                        <th>DOB</th>
+                                        <th>OMR No.</th>
+                                        <th>Upload Photo</th>
+                                        <th>Real-time Photo</th>
+                                        <th>Finger Image</th>
+                                        <th>Present</th>
+                                        <th>Verified</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="candidatesTable">
+                                    <tr><td colspan="10" class="loading"><div class="spinner"></div></td></tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>Centres Summary</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Centre Name</th>
+                                    <th>Total Candidates</th>
+                                    <th>Present</th>
+                                    <th>Absent</th>
+                                    <th>Verified</th>
+                                </tr>
+                            </thead>
+                            <tbody id="centresTable">
+                                <tr><td colspan="6" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>Exam Report</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Metric</th>
+                                    <th>Value</th>
+                                    <th>Percentage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTable">
+                                <tr><td colspan="3" class="loading"><div class="spinner"></div></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- IMAGE MODAL -->
+    <div id="imageModal" class="image-modal">
+        <span class="close" onclick="closeImageModal()">&times;</span>
+        <img id="modalImage" src="" alt="">
+    </div>
+
+    <script>
+        const API_URL = 'http://13.204.65.158:3001';
+        
+        let currentExamId = null;
+        let currentExamName = null;
+        let allOperators = [];
+        let allCandidates = [];
+        let allCentres = [];
+        let sessionTimeoutId = null;
+        let sessionTimerIntervalId = null;
+        const SESSION_DURATION = 5 * 60;
+        let remainingTime = SESSION_DURATION;
+
+        // Check if user is already logged in
+        window.addEventListener('load', () => {
+            const savedSession = sessionStorage.getItem('dashboardSession');
+            if (savedSession) {
+                const session = JSON.parse(savedSession);
+                currentExamId = session.examId;
+                currentExamName = session.examName;
+                remainingTime = session.remainingTime || SESSION_DURATION;
+                
+                document.getElementById('loginPage').style.display = 'none';
+                document.getElementById('dashboardPage').style.display = 'flex';
+                document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+                loadDashboardData();
+                startAutoSync();
+                startSessionTimer();
+            }
+        });
+
+        async function handleLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value.trim();
+            const errorMsg = document.getElementById('errorMsg');
+            const successMsg = document.getElementById('successMsg');
+
+            errorMsg.style.display = 'none';
+            successMsg.style.display = 'none';
+
+            if (!username || !password) {
+                errorMsg.textContent = '❌ Please enter username and password';
+                errorMsg.style.display = 'block';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_URL}/api/dashboard/validate-credentials`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    currentExamId = data.examId;
+                    currentExamName = data.examName;
+                    remainingTime = SESSION_DURATION;
+                    
+                    sessionStorage.setItem('dashboardSession', JSON.stringify({
+                        examId: currentExamId,
+                        examName: currentExamName,
+                        remainingTime: remainingTime
+                    }));
+                    
+                    successMsg.textContent = '✅ Login successful! Loading dashboard...';
+                    successMsg.style.display = 'block';
+                    
+                    setTimeout(() => {
+                        document.getElementById('loginPage').style.display = 'none';
+                        document.getElementById('dashboardPage').style.display = 'flex';
+                        document.getElementById('dashboardTitle').textContent = 'Live Exam Dashboard - ' + currentExamName;
+                        loadDashboardData();
+                        startAutoSync();
+                        startSessionTimer();
+                    }, 500);
+                } else {
+                    errorMsg.textContent = '❌ ' + (data.message || 'Invalid credentials');
+                    errorMsg.style.display = 'block';
+                }
+            } catch (error) {
+                errorMsg.textContent = '❌ Connection error. Please check if backend API is running.';
+                errorMsg.style.display = 'block';
+                console.error('Login error:', error);
+            }
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Load stats
+                const statsResponse = await fetch(`${API_URL}/api/dashboard/stats?examId=${currentExamId}`);
+                const statsData = await statsResponse.json();
+                if (statsData.success) {
+                    document.getElementById('totalCandidates').textContent = statsData.stats.total;
+                    document.getElementById('presentCount').textContent = statsData.stats.present;
+                    document.getElementById('absentCount').textContent = statsData.stats.absent;
+                    document.getElementById('verifiedCount').textContent = statsData.stats.verified;
+                }
+
+                // Load operators
+                const operatorsResponse = await fetch(`${API_URL}/api/dashboard/operators?examId=${currentExamId}`);
+                const operatorsData = await operatorsResponse.json();
+                if (operatorsData.success) {
+                    allOperators = operatorsData.operators;
+                    renderOperatorsTable();
+                    populateOperatorCentreFilter();
+                }
+
+                // Load candidates
+                const candidatesResponse = await fetch(`${API_URL}/api/dashboard/candidates?examId=${currentExamId}`);
+                const candidatesData = await candidatesResponse.json();
+                if (candidatesData.success) {
+                    allCandidates = candidatesData.candidates;
+                    renderCandidatesTable();
+                    populateCandidateCentreFilter();
+                }
+
+                // Load centres
+                const centresResponse = await fetch(`${API_URL}/api/dashboard/centres?examId=${currentExamId}`);
+                const centresData = await centresResponse.json();
+                if (centresData.success) {
+                    allCentres = centresData.centres;
+                    renderCentresTable();
+                }
+
+                renderReportsTable();
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function renderOperatorsTable() {
+            const tbody = document.getElementById('operatorsTable');
+            tbody.innerHTML = '';
+
+            allOperators.forEach(op => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${op.centre_code || '-'}</td>
+                    <td>${op.operator_name}</td>
+                    <td>${op.phone_number}</td>
+                    <td>${op.aadhaar_number}</td>
+                    <td>${op.selfie_url ? `<img src="${op.selfie_url}" class="image-cell" onclick="showImage('${op.selfie_url}')">` : '-'}</td>
+                `;
+            });
+        }
+
+        function renderCandidatesTable() {
+            const tbody = document.getElementById('candidatesTable');
+            tbody.innerHTML = '';
+
+            allCandidates.forEach(cand => {
+                const row = tbody.insertRow();
+                const present = cand.present === 'present' ? 'Yes' : 'No';
+                const verified = cand.verified === 'verified' ? 'Yes' : 'Pending';
+                
+                row.innerHTML = `
+                    <td>${cand.centre_code || '-'}</td>
+                    <td>${cand.candidate_name}</td>
+                    <td>${cand.father_name}</td>
+                    <td>${cand.date_of_birth || '-'}</td>
+                    <td>${cand.omr_number || '-'}</td>
+                    <td>${cand.upload_photo_url ? `<img src="${cand.upload_photo_url}" class="image-cell" onclick="showImage('${cand.upload_photo_url}')">` : '-'}</td>
+                    <td>${cand.present_photo_url ? `<img src="${cand.present_photo_url}" class="image-cell" onclick="showImage('${cand.present_photo_url}')">` : '-'}</td>
+                    <td>${cand.fingerprint_url ? `<img src="${cand.fingerprint_url}" class="image-cell" onclick="showImage('${cand.fingerprint_url}')">` : '-'}</td>
+                    <td><span class="badge ${present === 'Yes' ? 'badge-success' : 'badge-danger'}">${present}</span></td>
+                    <td><span class="badge ${verified === 'Yes' ? 'badge-success' : 'badge-warning'}">${verified}</span></td>
+                `;
+            });
+        }
+
+        function renderCentresTable() {
+            const tbody = document.getElementById('centresTable');
+            tbody.innerHTML = '';
+
+            allCentres.forEach(centre => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${centre.centre_code}</td>
+                    <td>${centre.centre_name}</td>
+                    <td>${centre.total_candidates || 0}</td>
+                    <td><span class="badge badge-success">${centre.present || 0}</span></td>
+                    <td><span class="badge badge-danger">${centre.absent || 0}</span></td>
+                    <td><span class="badge badge-info">${centre.verified || 0}</span></td>
+                `;
+            });
+        }
+
+        function renderReportsTable() {
+            const tbody = document.getElementById('reportsTable');
+            tbody.innerHTML = '';
+
+            const total = allCandidates.length;
+            const present = allCandidates.filter(c => c.present === 'present').length;
+            const absent = allCandidates.filter(c => c.present === 'absent').length;
+            const verified = allCandidates.filter(c => c.verified === 'verified').length;
+            const pending = total - verified;
+
+            const metrics = [
+                { label: 'Total Candidates', value: total, percentage: '100%' },
+                { label: 'Present', value: present, percentage: total > 0 ? ((present/total)*100).toFixed(1) + '%' : '0%' },
+                { label: 'Absent', value: absent, percentage: total > 0 ? ((absent/total)*100).toFixed(1) + '%' : '0%' },
+                { label: 'Verified', value: verified, percentage: total > 0 ? ((verified/total)*100).toFixed(1) + '%' : '0%' },
+                { label: 'Pending Verification', value: pending, percentage: total > 0 ? ((pending/total)*100).toFixed(1) + '%' : '0%' }
+            ];
+
+            metrics.forEach(metric => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${metric.label}</td>
+                    <td>${metric.value}</td>
+                    <td>${metric.percentage}</td>
+                `;
+            });
+        }
+
+        function populateOperatorCentreFilter() {
+            const select = document.getElementById('operatorCentreFilter');
+            const centres = [...new Set(allOperators.map(o => o.centre_code).filter(c => c))];
+            centres.forEach(centre => {
+                const option = document.createElement('option');
+                option.value = centre;
+                option.textContent = centre;
+                select.appendChild(option);
+            });
+        }
+
+        function populateCandidateCentreFilter() {
+            const select = document.getElementById('candidateCentreFilter');
+            select.innerHTML = '<option value="">All Centres</option>';
+            const centres = [...new Set(allCandidates.map(c => c.centre_code).filter(c => c))];
+            centres.forEach(centre => {
+                const option = document.createElement('option');
+                option.value = centre;
+                option.textContent = centre;
+                select.appendChild(option);
+            });
+        }
+
+        function filterOperators() {
+            const centreFilter = document.getElementById('operatorCentreFilter').value;
+            const searchTerm = document.getElementById('operatorSearch').value.toLowerCase();
+            const tbody = document.getElementById('operatorsTable');
+            tbody.innerHTML = '';
+
+            let filtered = allOperators;
+
+            if (centreFilter) {
+                filtered = filtered.filter(o => o.centre_code === centreFilter);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(o => 
+                    o.operator_name.toLowerCase().includes(searchTerm) || 
+                    o.phone_number.toLowerCase().includes(searchTerm)
+                );
+            }
+
+            filtered.forEach(op => {
+                const row = tbody.insertRow();
+                row.innerHTML = `
+                    <td>${op.centre_code || '-'}</td>
+                    <td>${op.operator_name}</td>
+                    <td>${op.phone_number}</td>
+                    <td>${op.aadhaar_number}</td>
+                    <td>${op.selfie_url ? `<img src="${op.selfie_url}" class="image-cell" onclick="showImage('${op.selfie_url}')">` : '-'}</td>
+                `;
+            });
+        }
+
+        function filterCandidates() {
+            const centreFilter = document.getElementById('candidateCentreFilter').value;
+            const searchTerm = document.getElementById('candidateSearch').value.toLowerCase();
+            const tbody = document.getElementById('candidatesTable');
+            tbody.innerHTML = '';
+
+            let filtered = allCandidates;
+
+            if (centreFilter) {
+                filtered = filtered.filter(c => c.centre_code === centreFilter);
+            }
+
+            if (searchTerm) {
+                filtered = filtered.filter(c => 
+                    c.candidate_name.toLowerCase().includes(searchTerm) || 
+                    (c.roll_number && c.roll_number.toLowerCase().includes(searchTerm))
+                );
+            }
+
+            filtered.forEach(cand => {
+                const row = tbody.insertRow();
+                const present = cand.present === 'present' ? 'Yes' : 'No';
+                const verified = cand.verified === 'verified' ? 'Yes' : 'Pending';
+                
+                row.innerHTML = `
+                    <td>${cand.centre_code || '-'}</td>
+                    <td>${cand.candidate_name}</td>
+                    <td>${cand.father_name}</td>
+                    <td>${cand.date_of_birth || '-'}</td>
+                    <td>${cand.omr_number || '-'}</td>
+                    <td>${cand.upload_photo_url ? `<img src="${cand.upload_photo_url}" class="image-cell" onclick="showImage('${cand.upload_photo_url}')">` : '-'}</td>
+                    <td>${cand.present_photo_url ? `<img src="${cand.present_photo_url}" class="image-cell" onclick="showImage('${cand.present_photo_url}')">` : '-'}</td>
+                    <td>${cand.fingerprint_url ? `<img src="${cand.fingerprint_url}" class="image-cell" onclick="showImage('${cand.fingerprint_url}')">` : '-'}</td>
+                    <td><span class="badge ${present === 'Yes' ? 'badge-success' : 'badge-danger'}">${present}</span></td>
+                    <td><span class="badge ${verified === 'Yes' ? 'badge-success' : 'badge-warning'}">${verified}</span></td>
+                `;
+            });
+        }
+
+        function showTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.dashboard-sidebar-item').forEach(item => item.classList.remove('active'));
+            
+            document.getElementById(tabName).classList.add('active');
+            element.classList.add('active');
+        }
+
+        function showImage(url) {
+            document.getElementById('modalImage').src = url;
+            document.getElementById('imageModal').classList.add('active');
+        }
+
+        function closeImageModal() {
+            document.getElementById('imageModal').classList.remove('active');
+        }
+
+        function startAutoSync() {
+            setInterval(() => {
+                const syncStatus = document.getElementById('syncStatus');
+                syncStatus.textContent = '🔄 Syncing...';
+                syncStatus.className = 'sync-status syncing';
+
+                loadDashboardData().then(() => {
+                    syncStatus.textContent = '✅ Synced';
+                    syncStatus.className = 'sync-status';
+                });
+            }, 5000);
+        }
+
+        function startSessionTimer() {
+            if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+            if (sessionTimeoutId) clearTimeout(sessionTimeoutId);
+
+            sessionTimerIntervalId = setInterval(() => {
+                remainingTime--;
+                updateTimerDisplay();
+                
+                const session = JSON.parse(sessionStorage.getItem('dashboardSession') || '{}');
+                session.remainingTime = remainingTime;
+                sessionStorage.setItem('dashboardSession', JSON.stringify(session));
+
+                if (remainingTime <= 0) {
+                    clearInterval(sessionTimerIntervalId);
+                    autoLogout();
+                }
+            }, 1000);
+
+            sessionTimeoutId = setTimeout(() => {
+                autoLogout();
+            }, SESSION_DURATION * 1000);
+        }
+
+        function updateTimerDisplay() {
+            const minutes = Math.floor(remainingTime / 60);
+            const seconds = remainingTime % 60;
+            const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+            document.getElementById('sessionTimer').textContent = `Session: ${timeStr}`;
+        }
+
+        function autoLogout() {
+            alert('⏱️ Your session has expired due to inactivity. Please login again.');
+            handleLogout();
+        }
+
+        function handleLogout() {
+            if (confirm('Are you sure you want to logout?')) {
+                if (sessionTimerIntervalId) clearInterval(sessionTimerIntervalId);
+                if (sessionTimeoutId) clearTimeout(sessionTimeoutId);
+                
+                sessionStorage.removeItem('dashboardSession');
+                
+                currentExamId = null;
+                currentExamName = null;
+                remainingTime = SESSION_DURATION;
+                
+                document.getElementById('loginPage').style.display = 'flex';
+                document.getElementById('dashboardPage').style.display = 'none';
+                document.getElementById('username').value = '';
+                document.getElementById('password').value = '';
+            }
+        }
+    </script>
+</body>
+</html>

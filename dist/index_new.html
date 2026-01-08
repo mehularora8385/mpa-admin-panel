@@ -1,0 +1,525 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPA Biometric Admin Panel - Complete Integration</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 180px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 0; overflow-y: auto; }
+        .sidebar-item { padding: 20px 15px; cursor: pointer; border-left: 4px solid transparent; transition: 0.3s; text-align: center; font-size: 12px; font-weight: 600; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .sidebar-icon { font-size: 28px; margin-bottom: 8px; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 22px; font-weight: 700; }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        .header-controls select { padding: 8px 12px; border: none; border-radius: 4px; background: white; color: #333; cursor: pointer; font-size: 13px; }
+        .header-controls button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.3s; }
+        .btn-sync { background: #27ae60; color: white; }
+        .btn-sync:hover { background: #229954; }
+        .btn-logout-all { background: #f39c12; color: white; }
+        .btn-logout-all:hover { background: #e67e22; }
+        .btn-logout { background: #e74c3c; color: white; }
+        .btn-logout:hover { background: #c0392b; }
+        .content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid; }
+        .stat-card.blue { border-top-color: #0d7377; }
+        .stat-card.green { border-top-color: #27ae60; }
+        .stat-card.orange { border-top-color: #f39c12; }
+        .stat-card.teal { border-top-color: #16a085; }
+        .stat-number { font-size: 36px; font-weight: 700; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; font-weight: 600; }
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .table-controls button { padding: 8px 16px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .table-controls button:hover { background: #0a5a66; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: 700; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 5px; transition: 0.3s; }
+        .btn-primary { background: #0d7377; color: white; }
+        .btn-primary:hover { background: #0a5a66; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .slot-box { background: #f0f8ff; padding: 12px; border-radius: 4px; margin: 8px 0; border-left: 3px solid #0d7377; }
+        .slot-title { font-weight: 600; color: #0d7377; }
+        .slot-time { color: #666; font-size: 12px; }
+        .slot-candidates { color: #27ae60; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-item active" onclick="showTab('dashboard', this)"><div class="sidebar-icon">📊</div><div>DASHBOARD</div></div>
+            <div class="sidebar-item" onclick="showTab('exams', this)"><div class="sidebar-icon">📝</div><div>EXAMS</div></div>
+            <div class="sidebar-item" onclick="showTab('slots', this)"><div class="sidebar-icon">⏰</div><div>SLOTS</div></div>
+            <div class="sidebar-item" onclick="showTab('centres', this)"><div class="sidebar-icon">🏢</div><div>CENTRES</div></div>
+            <div class="sidebar-item" onclick="showTab('operators', this)"><div class="sidebar-icon">👤</div><div>OPERATORS</div></div>
+            <div class="sidebar-item" onclick="showTab('candidates', this)"><div class="sidebar-icon">👥</div><div>CANDIDATES</div></div>
+            <div class="sidebar-item" onclick="showTab('reports', this)"><div class="sidebar-icon">📋</div><div>REPORTS</div></div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h1>MPA BIOMETRIC ADMIN PANEL</h1>
+                <div class="header-controls">
+                    <select id="headerExamSelect" onchange="updateAllTabs()">
+                        <option value="">Select Exam</option>
+                        <option value="exam_a">Exam A</option>
+                        <option value="exam_b">Exam B</option>
+                        <option value="mock_1">Mock Exam 1</option>
+                    </select>
+                    <button class="btn-sync" onclick="syncData()">🔄 Sync Data</button>
+                    <button class="btn-logout-all" onclick="logoutAll()">🚪 Logout All</button>
+                    <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- DASHBOARD TAB -->
+                <div id="dashboard" class="tab-content active">
+                    <div class="table-controls" style="margin-bottom: 20px;">
+                        <label><strong>Exam-wise Filtering:</strong></label>
+                        <select id="dashExamFilter" onchange="updateDashboard()">
+                            <option value="">All Exams</option>
+                            <option value="exam_a">Exam A</option>
+                            <option value="exam_b">Exam B</option>
+                            <option value="mock_1">Mock Exam 1</option>
+                        </select>
+                    </div>
+                    <div class="stats-row">
+                        <div class="stat-card blue"><div class="stat-number" id="totalCandidates">0</div><div class="stat-label">TOTAL CANDIDATES</div></div>
+                        <div class="stat-card green"><div class="stat-number" id="biometricCaptured">0</div><div class="stat-label">BIOMETRIC CAPTURED</div></div>
+                        <div class="stat-card orange"><div class="stat-number" id="operatorsActive">0</div><div class="stat-label">OPERATORS ACTIVE</div></div>
+                        <div class="stat-card teal"><div class="stat-number" id="centresOnline">0</div><div class="stat-label">CENTRES ONLINE</div></div>
+                    </div>
+                    <div class="table-section">
+                        <h3>CENTRE-WISE DATA TABLE</h3>
+                        <div class="table-controls">
+                            <input type="text" placeholder="Search..." id="centreSearch" onkeyup="filterCentreTable()">
+                            <button onclick="exportCentreData()">📥 Export to Excel</button>
+                        </div>
+                        <table>
+                            <thead><tr><th>Centre Code</th><th>Centre Name</th><th>Candidates</th><th>Biometric Status</th><th>Operator Status</th><th>Last Sync Time</th></tr></thead>
+                            <tbody id="centreTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- EXAMS TAB -->
+                <div id="exams" class="tab-content">
+                    <button class="btn btn-primary" onclick="openCreateExamModal()">+ Create Exam</button>
+                    <div class="table-section" style="margin-top: 20px;">
+                        <h3>EXAM LIST</h3>
+                        <table>
+                            <thead><tr><th>Exam Name</th><th>Status</th><th>Date</th><th>Slots</th><th>Total Candidates</th><th>Mock Control</th><th>Exam Control</th></tr></thead>
+                            <tbody id="examsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SLOTS TAB -->
+                <div id="slots" class="tab-content">
+                    <div class="table-controls">
+                        <select id="slotExamFilter" onchange="renderSlots()">
+                            <option value="">Select Exam</option>
+                            <option value="exam_a">Exam A</option>
+                            <option value="exam_b">Exam B</option>
+                            <option value="mock_1">Mock Exam 1</option>
+                        </select>
+                    </div>
+                    <div class="table-section">
+                        <h3>EXAM SLOT ALLOCATION (TIME-WISE)</h3>
+                        <div id="slotsContainer"></div>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-controls">
+                        <input type="text" placeholder="Search centre..." id="centreCodeSearch" onkeyup="filterCentres()">
+                        <select id="centreExamFilter" onchange="filterCentres()">
+                            <option value="">All Exams</option>
+                            <option value="exam_a">Exam A</option>
+                            <option value="exam_b">Exam B</option>
+                            <option value="mock_1">Mock Exam 1</option>
+                        </select>
+                        <button onclick="downloadCentreData()">📥 Download Centre Data</button>
+                    </div>
+                    <div class="table-section">
+                        <h3>CENTRE-WISE DATA DISTRIBUTION</h3>
+                        <table>
+                            <thead><tr><th>Centre Code</th><th>Centre Name</th><th>State</th><th>District</th><th>Exams</th><th>Total Candidates</th><th>Operators</th></tr></thead>
+                            <tbody id="centresTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-controls">
+                        <select id="opExamFilter" onchange="filterOperators()">
+                            <option value="">All Exams</option>
+                            <option value="exam_a">Exam A</option>
+                            <option value="exam_b">Exam B</option>
+                            <option value="mock_1">Mock Exam 1</option>
+                        </select>
+                        <select id="opCentreFilter" onchange="filterOperators()">
+                            <option value="">All Centres</option>
+                            <option value="C0001">C0001</option>
+                            <option value="C0002">C0002</option>
+                            <option value="C0003">C0003</option>
+                            <option value="C0004">C0004</option>
+                            <option value="C0005">C0005</option>
+                        </select>
+                        <input type="text" id="opSearch" placeholder="Search..." onkeyup="filterOperators()">
+                    </div>
+                    <div class="table-section">
+                        <h3>OPERATORS</h3>
+                        <table>
+                            <thead><tr><th>Operator Name</th><th>ID</th><th>Exam</th><th>Centre Code</th><th>Status</th><th>Last Check</th></tr></thead>
+                            <tbody id="operatorsTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-controls">
+                        <select id="candExamFilter" onchange="filterCandidates()">
+                            <option value="">All Exams</option>
+                            <option value="exam_a">Exam A</option>
+                            <option value="exam_b">Exam B</option>
+                            <option value="mock_1">Mock Exam 1</option>
+                        </select>
+                        <select id="candCentreFilter" onchange="filterCandidates()">
+                            <option value="">All Centres</option>
+                            <option value="C0001">C0001</option>
+                            <option value="C0002">C0002</option>
+                            <option value="C0003">C0003</option>
+                            <option value="C0004">C0004</option>
+                            <option value="C0005">C0005</option>
+                        </select>
+                        <input type="text" id="candSearch" placeholder="Search..." onkeyup="filterCandidates()">
+                        <button onclick="downloadCandidateData()">📥 Download Candidates</button>
+                    </div>
+                    <div class="table-section">
+                        <h3>CANDIDATES</h3>
+                        <table>
+                            <thead><tr><th>Candidate Name</th><th>Roll Number</th><th>Exam</th><th>Centre</th><th>Slot</th><th>Biometric Status</th></tr></thead>
+                            <tbody id="candidatesTableBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>AVAILABLE REPORTS & APP DOWNLOAD DATA</h3>
+                        <table>
+                            <thead><tr><th>Report Name</th><th>Description</th><th>Download</th></tr></thead>
+                            <tbody>
+                                <tr><td>📊 Biometric Status Report</td><td>All candidates with biometric capture status</td><td><button class="btn btn-success" onclick="downloadReport('biometric')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('biometric_csv')">📥 CSV</button></td></tr>
+                                <tr><td>🏢 Centre-wise Data</td><td>Centre distribution and candidate allocation</td><td><button class="btn btn-success" onclick="downloadReport('centre_data')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('centre_data_csv')">📥 CSV</button></td></tr>
+                                <tr><td>⏰ Slot Allocation Report</td><td>Exam-wise slot distribution and candidates per slot</td><td><button class="btn btn-success" onclick="downloadReport('slots')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('slots_csv')">📥 CSV</button></td></tr>
+                                <tr><td>👤 Operator Activity Report</td><td>Operator assignments and activity logs</td><td><button class="btn btn-success" onclick="downloadReport('operator')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('operator_csv')">📥 CSV</button></td></tr>
+                                <tr><td>📱 App Download Data</td><td>All candidate data for mobile app download</td><td><button class="btn btn-success" onclick="downloadReport('app_data')">📥 JSON</button> <button class="btn btn-success" onclick="downloadReport('app_data_csv')">📥 CSV</button></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const examStates = {
+            exam_a: { mockStatus: 'Inactive', examStatus: 'Active' },
+            exam_b: { mockStatus: 'Inactive', examStatus: 'Inactive' },
+            mock_1: { mockStatus: 'Active', examStatus: 'Inactive' }
+        };
+
+        const examSlots = {
+            exam_a: { name: 'Exam A', date: '2025-01-15', slots: [{ slot: 1, time: '09:00 AM - 11:30 AM', candidates: 95 }, { slot: 2, time: '01:00 PM - 03:30 PM', candidates: 87 }, { slot: 3, time: '04:00 PM - 06:30 PM', candidates: 78 }], totalCandidates: 260, centres: ['C0001', 'C0002', 'C0003', 'C0004'] },
+            exam_b: { name: 'Exam B', date: '2025-01-20', slots: [{ slot: 1, time: '09:00 AM - 11:30 AM', candidates: 72 }, { slot: 2, time: '01:00 PM - 03:30 PM', candidates: 68 }, { slot: 3, time: '04:00 PM - 06:30 PM', candidates: 65 }], totalCandidates: 205, centres: ['C0002', 'C0003', 'C0005'] },
+            mock_1: { name: 'Mock Exam 1', date: '2025-01-10', slots: [{ slot: 1, time: '10:00 AM - 12:00 PM', candidates: 120 }, { slot: 2, time: '02:00 PM - 04:00 PM', candidates: 115 }], totalCandidates: 235, centres: ['C0001', 'C0004', 'C0005'] }
+        };
+
+        const centreData = {
+            C0001: { code: 'C0001', name: 'Main Exam 1 Subsidiary', state: 'Maharashtra', district: 'Mumbai', exams: ['exam_a', 'mock_1'], candidatesByExam: { exam_a: 65, mock_1: 58 }, operatorsByExam: { exam_a: 2, mock_1: 1 }, biometricStatus: 'Successful', operatorStatus: 'Operated', lastSync: '2025-01-01 10:30:35' },
+            C0002: { code: 'C0002', name: 'Regional Centre Mumbai', state: 'Maharashtra', district: 'Mumbai', exams: ['exam_a', 'exam_b'], candidatesByExam: { exam_a: 72, exam_b: 68 }, operatorsByExam: { exam_a: 2, exam_b: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:34' },
+            C0003: { code: 'C0003', name: 'State Exam Centre', state: 'Maharashtra', district: 'Pune', exams: ['exam_a', 'exam_b'], candidatesByExam: { exam_a: 75, exam_b: 70 }, operatorsByExam: { exam_a: 2, exam_b: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:38' },
+            C0004: { code: 'C0004', name: 'Main Exam 1 Subsidiary', state: 'Maharashtra', district: 'Nagpur', exams: ['exam_a', 'mock_1'], candidatesByExam: { exam_a: 48, mock_1: 62 }, operatorsByExam: { exam_a: 1, mock_1: 2 }, biometricStatus: 'Successful', operatorStatus: 'Operated', lastSync: '2025-01-01 10:30:35' },
+            C0005: { code: 'C0005', name: 'Regional Centre Aurangabad', state: 'Maharashtra', district: 'Aurangabad', exams: ['exam_b', 'mock_1'], candidatesByExam: { exam_b: 67, mock_1: 75 }, operatorsByExam: { exam_b: 2, mock_1: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:38' }
+        };
+
+        const mockData = {
+            centres: [
+                { code: 'C0001', name: 'Main Exam 1 Subsidiary', candidates: 123, biometric: 'Successful', operator: 'Operated', lastSync: '2025-01-01 10:30:35' },
+                { code: 'C0002', name: 'Regional Centre Mumbai', candidates: 140, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:34' },
+                { code: 'C0003', name: 'State Exam Centre', candidates: 145, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:38' },
+                { code: 'C0004', name: 'Main Exam 1 Subsidiary', candidates: 110, biometric: 'Successful', operator: 'Operated', lastSync: '2025-01-01 10:30:35' },
+                { code: 'C0005', name: 'Regional Centre Aurangabad', candidates: 142, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:38' }
+            ],
+            operators: [
+                { name: 'Operator 1', id: 'OP001', exam: 'exam_a', centre: 'C0001', status: 'Active', lastCheck: '2025-01-01 10:30' },
+                { name: 'Operator 2', id: 'OP002', exam: 'exam_b', centre: 'C0002', status: 'Inactive', lastCheck: '2025-01-01 09:15' },
+                { name: 'Operator 3', id: 'OP003', exam: 'exam_a', centre: 'C0003', status: 'Active', lastCheck: '2025-01-01 10:45' },
+                { name: 'Operator 4', id: 'OP004', exam: 'mock_1', centre: 'C0001', status: 'Active', lastCheck: '2025-01-01 10:50' },
+                { name: 'Operator 5', id: 'OP005', exam: 'exam_b', centre: 'C0005', status: 'Active', lastCheck: '2025-01-01 10:55' }
+            ],
+            candidates: [
+                { name: 'Candidate 1', roll: '11000001', exam: 'exam_a', centre: 'C0001', slot: 1, biometric: 'Captured', verification: 'Verified' },
+                { name: 'Candidate 2', roll: '11000002', exam: 'exam_a', centre: 'C0002', slot: 2, biometric: 'Pending', verification: 'Pending' },
+                { name: 'Candidate 3', roll: '11000003', exam: 'exam_b', centre: 'C0003', slot: 1, biometric: 'Captured', verification: 'Verified' },
+                { name: 'Candidate 4', roll: '11000004', exam: 'mock_1', centre: 'C0001', slot: 1, biometric: 'Captured', verification: 'Verified' },
+                { name: 'Candidate 5', roll: '11000005', exam: 'exam_a', centre: 'C0004', slot: 3, biometric: 'Captured', verification: 'Verified' },
+                { name: 'Candidate 6', roll: '11000006', exam: 'exam_b', centre: 'C0005', slot: 2, biometric: 'Pending', verification: 'Pending' }
+            ]
+        };
+
+        function showTab(tabName, element) {
+            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+            
+            if (tabName === 'dashboard') updateDashboard();
+            if (tabName === 'exams') renderExamsTable();
+            if (tabName === 'slots') renderSlots();
+            if (tabName === 'centres') renderCentres();
+            if (tabName === 'operators') filterOperators();
+            if (tabName === 'candidates') filterCandidates();
+        }
+
+        function updateDashboard() {
+            const selectedExam = document.getElementById('dashExamFilter').value;
+            let totalCandidates = 0, captured = 0, operators = 0, centres = 0;
+            
+            if (!selectedExam) {
+                totalCandidates = mockData.candidates.length;
+                captured = mockData.candidates.filter(c => c.biometric === 'Captured').length;
+                operators = mockData.operators.filter(o => o.status === 'Active').length;
+                centres = new Set(mockData.centres.map(c => c.code)).size;
+            } else {
+                const exam = examSlots[selectedExam];
+                totalCandidates = exam.totalCandidates;
+                captured = Math.floor(exam.totalCandidates * 0.65);
+                operators = exam.centres.reduce((sum, c) => sum + (centreData[c].operatorsByExam[selectedExam] || 0), 0);
+                centres = exam.centres.length;
+            }
+            
+            document.getElementById('totalCandidates').textContent = totalCandidates;
+            document.getElementById('biometricCaptured').textContent = captured;
+            document.getElementById('operatorsActive').textContent = operators;
+            document.getElementById('centresOnline').textContent = centres;
+            
+            const tbody = document.getElementById('centreTableBody');
+            tbody.innerHTML = mockData.centres.map(c => `<tr><td>${c.code}</td><td>${c.name}</td><td>${c.candidates}</td><td><span class="badge badge-success">${c.biometric}</span></td><td><span class="badge badge-success">${c.operator}</span></td><td>${c.lastSync}</td></tr>`).join('');
+        }
+
+        function renderExamsTable() {
+            const exams = Object.keys(examSlots).map(id => {
+                const exam = examSlots[id];
+                const state = examStates[id];
+                const mockBtnClass = state.mockStatus === 'Active' ? 'btn-danger' : 'btn-success';
+                const mockBtnText = state.mockStatus === 'Active' ? 'Stop' : 'Activate';
+                const examBtnClass = state.examStatus === 'Active' ? 'btn-danger' : 'btn-success';
+                const examBtnText = state.examStatus === 'Active' ? 'Stop' : 'Activate';
+                const overallStatus = state.mockStatus === 'Active' || state.examStatus === 'Active' ? 'Active' : 'Inactive';
+                const statusBadge = overallStatus === 'Active' ? 'badge-success' : 'badge-warning';
+                
+                return `<tr><td>${exam.name}</td><td><span class="badge ${statusBadge}">${overallStatus}</span></td><td>${exam.date}</td><td>${exam.slots.length}</td><td>${exam.totalCandidates}</td><td><button class="btn ${mockBtnClass}" onclick="toggleMockStatus('${id}')">${mockBtnText}</button></td><td><button class="btn ${examBtnClass}" onclick="toggleExamStatus('${id}')">${examBtnText}</button></td></tr>`;
+            });
+            document.getElementById('examsTableBody').innerHTML = exams.join('');
+        }
+
+        function toggleMockStatus(exam) {
+            if (examStates[exam].mockStatus === 'Active') {
+                examStates[exam].mockStatus = 'Inactive';
+                alert('⏹️ Mock status: STOPPED');
+            } else {
+                examStates[exam].mockStatus = 'Active';
+                alert('▶️ Mock status: ACTIVATED');
+            }
+            renderExamsTable();
+        }
+
+        function toggleExamStatus(exam) {
+            if (examStates[exam].examStatus === 'Active') {
+                examStates[exam].examStatus = 'Inactive';
+                alert('⏹️ Exam status: STOPPED');
+            } else {
+                examStates[exam].examStatus = 'Active';
+                alert('▶️ Exam status: ACTIVATED');
+            }
+            renderExamsTable();
+        }
+
+        function renderSlots() {
+            const examId = document.getElementById('slotExamFilter').value;
+            if (!examId) return;
+            
+            const exam = examSlots[examId];
+            const html = exam.slots.map(slot => `
+                <div class="slot-box">
+                    <div class="slot-title">Slot ${slot.slot}: ${slot.time}</div>
+                    <div class="slot-candidates">👥 ${slot.candidates} Candidates</div>
+                </div>
+            `).join('');
+            document.getElementById('slotsContainer').innerHTML = html;
+        }
+
+        function renderCentres() {
+            const examFilter = document.getElementById('centreExamFilter').value;
+            const search = document.getElementById('centreCodeSearch').value.toLowerCase();
+            
+            const filtered = Object.values(centreData).filter(c => 
+                (!examFilter || c.exams.includes(examFilter)) &&
+                (c.code.toLowerCase().includes(search) || c.name.toLowerCase().includes(search))
+            );
+            
+            const tbody = document.getElementById('centresTableBody');
+            tbody.innerHTML = filtered.map(c => `
+                <tr>
+                    <td>${c.code}</td>
+                    <td>${c.name}</td>
+                    <td>${c.state}</td>
+                    <td>${c.district}</td>
+                    <td>${c.exams.join(', ')}</td>
+                    <td>${Object.values(c.candidatesByExam).reduce((a,b)=>a+b,0)}</td>
+                    <td>${Object.values(c.operatorsByExam).reduce((a,b)=>a+b,0)}</td>
+                </tr>
+            `).join('');
+        }
+
+        function filterCentres() {
+            renderCentres();
+        }
+
+        function filterOperators() {
+            const exam = document.getElementById('opExamFilter').value;
+            const centre = document.getElementById('opCentreFilter').value;
+            const search = document.getElementById('opSearch').value.toLowerCase();
+            
+            const filtered = mockData.operators.filter(op => 
+                (!exam || op.exam === exam) &&
+                (!centre || op.centre === centre) &&
+                (op.name.toLowerCase().includes(search) || op.id.toLowerCase().includes(search))
+            );
+            
+            const tbody = document.getElementById('operatorsTableBody');
+            tbody.innerHTML = filtered.map(op => `<tr><td>${op.name}</td><td>${op.id}</td><td>${op.exam}</td><td>${op.centre}</td><td><span class="badge ${op.status === 'Active' ? 'badge-success' : 'badge-danger'}">${op.status}</span></td><td>${op.lastCheck}</td></tr>`).join('');
+        }
+
+        function filterCandidates() {
+            const exam = document.getElementById('candExamFilter').value;
+            const centre = document.getElementById('candCentreFilter').value;
+            const search = document.getElementById('candSearch').value.toLowerCase();
+            
+            const filtered = mockData.candidates.filter(cand => 
+                (!exam || cand.exam === exam) &&
+                (!centre || cand.centre === centre) &&
+                (cand.name.toLowerCase().includes(search) || cand.roll.toLowerCase().includes(search))
+            );
+            
+            const tbody = document.getElementById('candidatesTableBody');
+            tbody.innerHTML = filtered.map(cand => `<tr><td>${cand.name}</td><td>${cand.roll}</td><td>${cand.exam}</td><td>${cand.centre}</td><td>Slot ${cand.slot}</td><td><span class="badge ${cand.biometric === 'Captured' ? 'badge-success' : 'badge-warning'}">${cand.biometric}</span></td></tr>`).join('');
+        }
+
+        function downloadReport(type) {
+            let data = [];
+            
+            if (type === 'biometric' || type === 'biometric_csv') {
+                data = mockData.candidates.map(c => ({ 'Candidate Name': c.name, 'Roll Number': c.roll, 'Exam': c.exam, 'Centre': c.centre, 'Slot': c.slot, 'Biometric Status': c.biometric }));
+                type === 'biometric' ? downloadExcel(data, 'Biometric_Report') : downloadCSV(data, 'Biometric_Report');
+            } else if (type === 'centre_data' || type === 'centre_data_csv') {
+                data = Object.values(centreData).map(c => ({ 'Centre Code': c.code, 'Centre Name': c.name, 'State': c.state, 'District': c.district, 'Exams': c.exams.join(', '), 'Total Candidates': Object.values(c.candidatesByExam).reduce((a,b)=>a+b,0), 'Total Operators': Object.values(c.operatorsByExam).reduce((a,b)=>a+b,0) }));
+                type === 'centre_data' ? downloadExcel(data, 'Centre_Data') : downloadCSV(data, 'Centre_Data');
+            } else if (type === 'slots' || type === 'slots_csv') {
+                data = [];
+                Object.keys(examSlots).forEach(examId => {
+                    const exam = examSlots[examId];
+                    exam.slots.forEach(slot => {
+                        data.push({ 'Exam Name': exam.name, 'Exam Date': exam.date, 'Slot Number': slot.slot, 'Slot Time': slot.time, 'Candidates': slot.candidates });
+                    });
+                });
+                type === 'slots' ? downloadExcel(data, 'Slot_Allocation') : downloadCSV(data, 'Slot_Allocation');
+            } else if (type === 'operator' || type === 'operator_csv') {
+                data = mockData.operators.map(o => ({ 'Operator Name': o.name, 'Operator ID': o.id, 'Exam': o.exam, 'Centre': o.centre, 'Status': o.status, 'Last Check': o.lastCheck }));
+                type === 'operator' ? downloadExcel(data, 'Operator_Report') : downloadCSV(data, 'Operator_Report');
+            } else if (type === 'app_data' || type === 'app_data_csv') {
+                data = mockData.candidates.map(c => ({ 'Candidate Name': c.name, 'Roll Number': c.roll, 'Exam': c.exam, 'Centre Code': c.centre, 'Slot': c.slot, 'Biometric Status': c.biometric, 'Verification Status': c.verification }));
+                type === 'app_data' ? downloadJSON(data, 'App_Download_Data') : downloadCSV(data, 'App_Download_Data');
+            }
+        }
+
+        function downloadExcel(data, filename) {
+            const ws = XLSX.utils.json_to_sheet(data);
+            const wb = XLSX.utils.book_new();
+            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
+            XLSX.writeFile(wb, filename + '.xlsx');
+            alert('✅ Downloaded: ' + filename + '.xlsx');
+        }
+
+        function downloadCSV(data, filename) {
+            const csv = [Object.keys(data[0]).join(','), ...data.map(row => Object.values(row).join(','))].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename + '.csv';
+            a.click();
+            alert('✅ Downloaded: ' + filename + '.csv');
+        }
+
+        function downloadJSON(data, filename) {
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = filename + '.json';
+            a.click();
+            alert('✅ Downloaded: ' + filename + '.json');
+        }
+
+        function downloadCentreData() { downloadReport('centre_data'); }
+        function downloadCandidateData() { downloadReport('app_data'); }
+        function filterCentreTable() {
+            const search = document.getElementById('centreSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#centreTableBody tr');
+            rows.forEach(row => { row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none'; });
+        }
+        function exportCentreData() { downloadReport('centre_data'); }
+        function openCreateExamModal() { alert('Create exam modal'); }
+        function syncData() { alert('🔄 Syncing data...'); }
+        function logoutAll() { if (confirm('Logout all?')) alert('✅ All logged out'); }
+        function logout() { if (confirm('Logout?')) alert('✅ Logged out'); }
+        function updateAllTabs() { updateDashboard(); }
+
+        updateDashboard();
+        renderExamsTable();
+    </script>
+</body>
+</html>
