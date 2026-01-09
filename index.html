@@ -7,6 +7,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -144,9 +145,11 @@
             display: flex;
             gap: 10px;
             margin-bottom: 15px;
+            flex-wrap: wrap;
         }
         .table-controls input {
             flex: 1;
+            min-width: 200px;
             padding: 10px;
             border: 1px solid #ddd;
             border-radius: 4px;
@@ -162,6 +165,28 @@
         }
         .table-controls button:hover {
             background: #14919b;
+        }
+        .btn-add {
+            background: #06a77d;
+        }
+        .btn-add:hover {
+            background: #059669;
+        }
+        .btn-edit {
+            background: #0066cc;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-delete {
+            background: #dc2f02;
+            padding: 5px 10px;
+            font-size: 12px;
+        }
+        .btn-export {
+            background: #ffa500;
+        }
+        .btn-export:hover {
+            background: #ff8c00;
         }
         table {
             width: 100%;
@@ -201,6 +226,10 @@
             background: #d1ecf1;
             color: #0c5460;
         }
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
         .modal {
             display: none;
             position: fixed;
@@ -212,6 +241,7 @@
             z-index: 1000;
             justify-content: center;
             align-items: center;
+            overflow-y: auto;
         }
         .modal.active {
             display: flex;
@@ -220,17 +250,40 @@
             background: white;
             padding: 30px;
             border-radius: 8px;
-            text-align: center;
-            min-width: 300px;
+            min-width: 400px;
+            max-height: 90vh;
+            overflow-y: auto;
         }
         .modal-content h2 {
             margin-bottom: 20px;
             color: #0d7377;
         }
+        .form-group {
+            margin-bottom: 15px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            color: #333;
+            font-weight: bold;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-family: inherit;
+        }
+        .form-group textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
         .modal-buttons {
             display: flex;
             gap: 10px;
-            justify-content: center;
+            justify-content: flex-end;
             margin-top: 20px;
         }
         .modal-buttons button {
@@ -274,6 +327,9 @@
             border-radius: 4px;
             margin-bottom: 20px;
             border: 1px solid #c3e6cb;
+        }
+        .table-wrapper {
+            overflow-x: auto;
         }
     </style>
 </head>
@@ -342,38 +398,113 @@
                         <h2>CENTRE-WISE DATA TABLE</h2>
                         <div class="table-controls">
                             <input type="text" id="centreSearch" placeholder="Search...">
-                            <button onclick="exportToExcel()">📥 Export to Excel</button>
+                            <button class="btn-export" onclick="exportDashboardToExcel()">📥 Export to Excel</button>
                         </div>
-                        <div id="tableContainer">
-                            <div class="loading">Loading data from backend...</div>
+                        <div class="table-wrapper">
+                            <div id="tableContainer">
+                                <div class="loading">Loading data from backend...</div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- OTHER PAGES -->
+                <!-- EXAMS PAGE -->
                 <div id="exams" class="page">
-                    <h2>Exams Management</h2>
-                    <div class="loading">Loading exams data...</div>
+                    <div class="data-table">
+                        <h2>EXAMS MANAGEMENT</h2>
+                        <div class="table-controls">
+                            <input type="text" id="examsSearch" placeholder="Search exams...">
+                            <button class="btn-add" onclick="openAddExamModal()">➕ Add Exam</button>
+                            <button class="btn-export" onclick="exportExamsToExcel()">📥 Export</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <div id="examsTableContainer">
+                                <div class="loading">Loading exams data...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- SLOTS PAGE -->
                 <div id="slots" class="page">
-                    <h2>Slots Management</h2>
-                    <div class="loading">Loading slots data...</div>
+                    <div class="data-table">
+                        <h2>SLOTS MANAGEMENT</h2>
+                        <div class="table-controls">
+                            <input type="text" id="slotsSearch" placeholder="Search slots...">
+                            <button class="btn-add" onclick="openAddSlotModal()">➕ Add Slot</button>
+                            <button class="btn-export" onclick="exportSlotsToExcel()">📥 Export</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <div id="slotsTableContainer">
+                                <div class="loading">Loading slots data...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- CENTRES PAGE -->
                 <div id="centres" class="page">
-                    <h2>Centres Management</h2>
-                    <div class="loading">Loading centres data...</div>
+                    <div class="data-table">
+                        <h2>CENTRES MANAGEMENT</h2>
+                        <div class="table-controls">
+                            <input type="text" id="centresSearch" placeholder="Search centres...">
+                            <button class="btn-add" onclick="openAddCentreModal()">➕ Add Centre</button>
+                            <button class="btn-export" onclick="exportCentresToExcel()">📥 Export</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <div id="centresTableContainer">
+                                <div class="loading">Loading centres data...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- OPERATORS PAGE -->
                 <div id="operators" class="page">
-                    <h2>Operators Management</h2>
-                    <div class="loading">Loading operators data...</div>
+                    <div class="data-table">
+                        <h2>OPERATORS MANAGEMENT</h2>
+                        <div class="table-controls">
+                            <input type="text" id="operatorsSearch" placeholder="Search operators...">
+                            <button class="btn-add" onclick="openAddOperatorModal()">➕ Add Operator</button>
+                            <button class="btn-export" onclick="exportOperatorsToExcel()">📥 Export</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <div id="operatorsTableContainer">
+                                <div class="loading">Loading operators data...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- CANDIDATES PAGE -->
                 <div id="candidates" class="page">
-                    <h2>Candidates Management</h2>
-                    <div class="loading">Loading candidates data...</div>
+                    <div class="data-table">
+                        <h2>CANDIDATES MANAGEMENT</h2>
+                        <div class="table-controls">
+                            <input type="text" id="candidatesSearch" placeholder="Search candidates...">
+                            <button class="btn-add" onclick="openAddCandidateModal()">➕ Add Candidate</button>
+                            <button class="btn-export" onclick="exportCandidatesToExcel()">📥 Export</button>
+                        </div>
+                        <div class="table-wrapper">
+                            <div id="candidatesTableContainer">
+                                <div class="loading">Loading candidates data...</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
+
+                <!-- REPORTS PAGE -->
                 <div id="reports" class="page">
-                    <h2>Reports</h2>
-                    <div class="loading">Loading reports data...</div>
+                    <div class="data-table">
+                        <h2>REPORTS & ANALYTICS</h2>
+                        <div class="table-controls">
+                            <button class="btn-export" onclick="exportReportsPDF()">📄 Export as PDF</button>
+                            <button class="btn-export" onclick="exportReportsExcel()">📥 Export as Excel</button>
+                        </div>
+                        <div id="reportsContainer">
+                            <div class="loading">Loading reports data...</div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -400,6 +531,197 @@
                 <button class="btn-confirm" onclick="confirmLogoutAll()">Yes, Logout All</button>
                 <button class="btn-cancel" onclick="cancelLogoutAll()">Cancel</button>
             </div>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT EXAM MODAL -->
+    <div id="examModal" class="modal">
+        <div class="modal-content">
+            <h2 id="examModalTitle">Add Exam</h2>
+            <form id="examForm">
+                <div class="form-group">
+                    <label>Exam Name *</label>
+                    <input type="text" id="examName" required>
+                </div>
+                <div class="form-group">
+                    <label>Exam Code *</label>
+                    <input type="text" id="examCode" required>
+                </div>
+                <div class="form-group">
+                    <label>Exam Date *</label>
+                    <input type="date" id="examDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Total Candidates *</label>
+                    <input type="number" id="examCandidates" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="examStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                        <option value="Completed">Completed</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-confirm" onclick="saveExam()">Save</button>
+                    <button type="button" class="btn-cancel" onclick="closeExamModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT SLOT MODAL -->
+    <div id="slotModal" class="modal">
+        <div class="modal-content">
+            <h2 id="slotModalTitle">Add Slot</h2>
+            <form id="slotForm">
+                <div class="form-group">
+                    <label>Exam *</label>
+                    <select id="slotExam" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Slot Date *</label>
+                    <input type="date" id="slotDate" required>
+                </div>
+                <div class="form-group">
+                    <label>Start Time *</label>
+                    <input type="time" id="slotStartTime" required>
+                </div>
+                <div class="form-group">
+                    <label>End Time *</label>
+                    <input type="time" id="slotEndTime" required>
+                </div>
+                <div class="form-group">
+                    <label>Capacity *</label>
+                    <input type="number" id="slotCapacity" required>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-confirm" onclick="saveSlot()">Save</button>
+                    <button type="button" class="btn-cancel" onclick="closeSlotModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT CENTRE MODAL -->
+    <div id="centreModal" class="modal">
+        <div class="modal-content">
+            <h2 id="centreModalTitle">Add Centre</h2>
+            <form id="centreForm">
+                <div class="form-group">
+                    <label>Centre Name *</label>
+                    <input type="text" id="centreName" required>
+                </div>
+                <div class="form-group">
+                    <label>Centre Code *</label>
+                    <input type="text" id="centreCode" required>
+                </div>
+                <div class="form-group">
+                    <label>Location *</label>
+                    <input type="text" id="centreLocation" required>
+                </div>
+                <div class="form-group">
+                    <label>Contact Number *</label>
+                    <input type="tel" id="centreContact" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="centreEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="centreStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-confirm" onclick="saveCentre()">Save</button>
+                    <button type="button" class="btn-cancel" onclick="closeCentreModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT OPERATOR MODAL -->
+    <div id="operatorModal" class="modal">
+        <div class="modal-content">
+            <h2 id="operatorModalTitle">Add Operator</h2>
+            <form id="operatorForm">
+                <div class="form-group">
+                    <label>Operator Name *</label>
+                    <input type="text" id="operatorName" required>
+                </div>
+                <div class="form-group">
+                    <label>Operator ID *</label>
+                    <input type="text" id="operatorId" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="operatorEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone *</label>
+                    <input type="tel" id="operatorPhone" required>
+                </div>
+                <div class="form-group">
+                    <label>Centre *</label>
+                    <select id="operatorCentre" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Status</label>
+                    <select id="operatorStatus">
+                        <option value="Active">Active</option>
+                        <option value="Inactive">Inactive</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-confirm" onclick="saveOperator()">Save</button>
+                    <button type="button" class="btn-cancel" onclick="closeOperatorModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ADD/EDIT CANDIDATE MODAL -->
+    <div id="candidateModal" class="modal">
+        <div class="modal-content">
+            <h2 id="candidateModalTitle">Add Candidate</h2>
+            <form id="candidateForm">
+                <div class="form-group">
+                    <label>Candidate Name *</label>
+                    <input type="text" id="candidateName" required>
+                </div>
+                <div class="form-group">
+                    <label>Roll Number *</label>
+                    <input type="text" id="candidateRoll" required>
+                </div>
+                <div class="form-group">
+                    <label>Email *</label>
+                    <input type="email" id="candidateEmail" required>
+                </div>
+                <div class="form-group">
+                    <label>Exam *</label>
+                    <select id="candidateExam" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Centre *</label>
+                    <select id="candidateCentre" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Biometric Status</label>
+                    <select id="candidateBioStatus">
+                        <option value="Pending">Pending</option>
+                        <option value="Captured">Captured</option>
+                        <option value="Verified">Verified</option>
+                    </select>
+                </div>
+                <div class="modal-buttons">
+                    <button type="button" class="btn-confirm" onclick="saveCandidate()">Save</button>
+                    <button type="button" class="btn-cancel" onclick="closeCandidateModal()">Cancel</button>
+                </div>
+            </form>
         </div>
     </div>
 
@@ -442,7 +764,6 @@
         }
 
         function confirmLogoutAll() {
-            // Call backend API to logout all operators
             fetch(`${API_BASE_URL}/api/operators/logout-all`, {
                 method: 'POST',
                 headers: {
@@ -488,10 +809,8 @@
 
         // ==================== DASHBOARD FUNCTIONALITY ====================
         function loadDashboard() {
-            // Check session first
             if (!checkSession()) return;
 
-            // Fetch stats from backend
             fetch(`${API_BASE_URL}/api/dashboard/stats`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
@@ -545,9 +864,350 @@
             document.getElementById('tableContainer').innerHTML = html;
         }
 
-        // ==================== EXPORT FUNCTIONALITY ====================
-        function exportToExcel() {
-            fetch(`${API_BASE_URL}/api/centres/export`, {
+        // ==================== EXAMS MANAGEMENT ====================
+        function loadExams() {
+            fetch(`${API_BASE_URL}/api/exams`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayExamsTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading exams:', error);
+                document.getElementById('examsTableContainer').innerHTML = '<div class="error">Error loading exams</div>';
+            });
+        }
+
+        function displayExamsTable(data) {
+            let html = '<table><thead><tr><th>Exam Name</th><th>Code</th><th>Date</th><th>Candidates</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(exam => {
+                html += `<tr>
+                    <td>${exam.name}</td>
+                    <td>${exam.code}</td>
+                    <td>${exam.date}</td>
+                    <td>${exam.candidates}</td>
+                    <td><span class="badge badge-${exam.status === 'Active' ? 'success' : 'warning'}">${exam.status}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="editExam(${exam.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteExam(${exam.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('examsTableContainer').innerHTML = html;
+        }
+
+        function openAddExamModal() {
+            document.getElementById('examModalTitle').textContent = 'Add Exam';
+            document.getElementById('examForm').reset();
+            document.getElementById('examModal').classList.add('active');
+        }
+
+        function closeExamModal() {
+            document.getElementById('examModal').classList.remove('active');
+        }
+
+        function saveExam() {
+            const exam = {
+                name: document.getElementById('examName').value,
+                code: document.getElementById('examCode').value,
+                date: document.getElementById('examDate').value,
+                candidates: document.getElementById('examCandidates').value,
+                status: document.getElementById('examStatus').value
+            };
+
+            fetch(`${API_BASE_URL}/api/exams`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(exam)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Exam saved successfully!');
+                closeExamModal();
+                loadExams();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving exam');
+            });
+        }
+
+        function editExam(id) {
+            alert('Edit exam ' + id);
+        }
+
+        function deleteExam(id) {
+            if (confirm('Are you sure you want to delete this exam?')) {
+                fetch(`${API_BASE_URL}/api/exams/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Exam deleted successfully!');
+                    loadExams();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting exam');
+                });
+            }
+        }
+
+        function exportExamsToExcel() {
+            fetch(`${API_BASE_URL}/api/exams`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Exams');
+                XLSX.writeFile(wb, 'exams-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== SLOTS MANAGEMENT ====================
+        function loadSlots() {
+            fetch(`${API_BASE_URL}/api/slots`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displaySlotsTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading slots:', error);
+                document.getElementById('slotsTableContainer').innerHTML = '<div class="error">Error loading slots</div>';
+            });
+        }
+
+        function displaySlotsTable(data) {
+            let html = '<table><thead><tr><th>Exam</th><th>Date</th><th>Start Time</th><th>End Time</th><th>Capacity</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(slot => {
+                html += `<tr>
+                    <td>${slot.exam}</td>
+                    <td>${slot.date}</td>
+                    <td>${slot.startTime}</td>
+                    <td>${slot.endTime}</td>
+                    <td>${slot.capacity}</td>
+                    <td>
+                        <button class="btn-edit" onclick="editSlot(${slot.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteSlot(${slot.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('slotsTableContainer').innerHTML = html;
+        }
+
+        function openAddSlotModal() {
+            document.getElementById('slotModalTitle').textContent = 'Add Slot';
+            document.getElementById('slotForm').reset();
+            document.getElementById('slotModal').classList.add('active');
+        }
+
+        function closeSlotModal() {
+            document.getElementById('slotModal').classList.remove('active');
+        }
+
+        function saveSlot() {
+            const slot = {
+                exam: document.getElementById('slotExam').value,
+                date: document.getElementById('slotDate').value,
+                startTime: document.getElementById('slotStartTime').value,
+                endTime: document.getElementById('slotEndTime').value,
+                capacity: document.getElementById('slotCapacity').value
+            };
+
+            fetch(`${API_BASE_URL}/api/slots`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(slot)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Slot saved successfully!');
+                closeSlotModal();
+                loadSlots();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving slot');
+            });
+        }
+
+        function editSlot(id) {
+            alert('Edit slot ' + id);
+        }
+
+        function deleteSlot(id) {
+            if (confirm('Are you sure you want to delete this slot?')) {
+                fetch(`${API_BASE_URL}/api/slots/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Slot deleted successfully!');
+                    loadSlots();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting slot');
+                });
+            }
+        }
+
+        function exportSlotsToExcel() {
+            fetch(`${API_BASE_URL}/api/slots`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Slots');
+                XLSX.writeFile(wb, 'slots-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== CENTRES MANAGEMENT ====================
+        function loadCentres() {
+            fetch(`${API_BASE_URL}/api/centres`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayCentresTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading centres:', error);
+                document.getElementById('centresTableContainer').innerHTML = '<div class="error">Error loading centres</div>';
+            });
+        }
+
+        function displayCentresTable(data) {
+            let html = '<table><thead><tr><th>Code</th><th>Name</th><th>Location</th><th>Contact</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(centre => {
+                html += `<tr>
+                    <td>${centre.code}</td>
+                    <td>${centre.name}</td>
+                    <td>${centre.location}</td>
+                    <td>${centre.contact}</td>
+                    <td><span class="badge badge-${centre.status === 'Active' ? 'success' : 'warning'}">${centre.status}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="editCentre(${centre.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteCentre(${centre.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('centresTableContainer').innerHTML = html;
+        }
+
+        function openAddCentreModal() {
+            document.getElementById('centreModalTitle').textContent = 'Add Centre';
+            document.getElementById('centreForm').reset();
+            document.getElementById('centreModal').classList.add('active');
+        }
+
+        function closeCentreModal() {
+            document.getElementById('centreModal').classList.remove('active');
+        }
+
+        function saveCentre() {
+            const centre = {
+                name: document.getElementById('centreName').value,
+                code: document.getElementById('centreCode').value,
+                location: document.getElementById('centreLocation').value,
+                contact: document.getElementById('centreContact').value,
+                email: document.getElementById('centreEmail').value,
+                status: document.getElementById('centreStatus').value
+            };
+
+            fetch(`${API_BASE_URL}/api/centres`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(centre)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Centre saved successfully!');
+                closeCentreModal();
+                loadCentres();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving centre');
+            });
+        }
+
+        function editCentre(id) {
+            alert('Edit centre ' + id);
+        }
+
+        function deleteCentre(id) {
+            if (confirm('Are you sure you want to delete this centre?')) {
+                fetch(`${API_BASE_URL}/api/centres/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Centre deleted successfully!');
+                    loadCentres();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting centre');
+                });
+            }
+        }
+
+        function exportCentresToExcel() {
+            fetch(`${API_BASE_URL}/api/centres`, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                 }
@@ -560,7 +1220,330 @@
                 XLSX.writeFile(wb, 'centres-data.xlsx');
             })
             .catch(error => {
-                console.error('Error exporting data:', error);
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== OPERATORS MANAGEMENT ====================
+        function loadOperators() {
+            fetch(`${API_BASE_URL}/api/operators`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayOperatorsTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading operators:', error);
+                document.getElementById('operatorsTableContainer').innerHTML = '<div class="error">Error loading operators</div>';
+            });
+        }
+
+        function displayOperatorsTable(data) {
+            let html = '<table><thead><tr><th>Name</th><th>ID</th><th>Email</th><th>Centre</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(operator => {
+                html += `<tr>
+                    <td>${operator.name}</td>
+                    <td>${operator.id}</td>
+                    <td>${operator.email}</td>
+                    <td>${operator.centre}</td>
+                    <td><span class="badge badge-${operator.status === 'Active' ? 'success' : 'warning'}">${operator.status}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="editOperator(${operator.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteOperator(${operator.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('operatorsTableContainer').innerHTML = html;
+        }
+
+        function openAddOperatorModal() {
+            document.getElementById('operatorModalTitle').textContent = 'Add Operator';
+            document.getElementById('operatorForm').reset();
+            document.getElementById('operatorModal').classList.add('active');
+        }
+
+        function closeOperatorModal() {
+            document.getElementById('operatorModal').classList.remove('active');
+        }
+
+        function saveOperator() {
+            const operator = {
+                name: document.getElementById('operatorName').value,
+                id: document.getElementById('operatorId').value,
+                email: document.getElementById('operatorEmail').value,
+                phone: document.getElementById('operatorPhone').value,
+                centre: document.getElementById('operatorCentre').value,
+                status: document.getElementById('operatorStatus').value
+            };
+
+            fetch(`${API_BASE_URL}/api/operators`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(operator)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Operator saved successfully!');
+                closeOperatorModal();
+                loadOperators();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving operator');
+            });
+        }
+
+        function editOperator(id) {
+            alert('Edit operator ' + id);
+        }
+
+        function deleteOperator(id) {
+            if (confirm('Are you sure you want to delete this operator?')) {
+                fetch(`${API_BASE_URL}/api/operators/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Operator deleted successfully!');
+                    loadOperators();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting operator');
+                });
+            }
+        }
+
+        function exportOperatorsToExcel() {
+            fetch(`${API_BASE_URL}/api/operators`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Operators');
+                XLSX.writeFile(wb, 'operators-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== CANDIDATES MANAGEMENT ====================
+        function loadCandidates() {
+            fetch(`${API_BASE_URL}/api/candidates`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayCandidatesTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading candidates:', error);
+                document.getElementById('candidatesTableContainer').innerHTML = '<div class="error">Error loading candidates</div>';
+            });
+        }
+
+        function displayCandidatesTable(data) {
+            let html = '<table><thead><tr><th>Name</th><th>Roll Number</th><th>Email</th><th>Exam</th><th>Biometric Status</th><th>Actions</th></tr></thead><tbody>';
+            
+            data.forEach(candidate => {
+                html += `<tr>
+                    <td>${candidate.name}</td>
+                    <td>${candidate.roll}</td>
+                    <td>${candidate.email}</td>
+                    <td>${candidate.exam}</td>
+                    <td><span class="badge badge-${candidate.bioStatus === 'Verified' ? 'success' : candidate.bioStatus === 'Captured' ? 'info' : 'warning'}">${candidate.bioStatus}</span></td>
+                    <td>
+                        <button class="btn-edit" onclick="editCandidate(${candidate.id})">Edit</button>
+                        <button class="btn-delete" onclick="deleteCandidate(${candidate.id})">Delete</button>
+                    </td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('candidatesTableContainer').innerHTML = html;
+        }
+
+        function openAddCandidateModal() {
+            document.getElementById('candidateModalTitle').textContent = 'Add Candidate';
+            document.getElementById('candidateForm').reset();
+            document.getElementById('candidateModal').classList.add('active');
+        }
+
+        function closeCandidateModal() {
+            document.getElementById('candidateModal').classList.remove('active');
+        }
+
+        function saveCandidate() {
+            const candidate = {
+                name: document.getElementById('candidateName').value,
+                roll: document.getElementById('candidateRoll').value,
+                email: document.getElementById('candidateEmail').value,
+                exam: document.getElementById('candidateExam').value,
+                centre: document.getElementById('candidateCentre').value,
+                bioStatus: document.getElementById('candidateBioStatus').value
+            };
+
+            fetch(`${API_BASE_URL}/api/candidates`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(candidate)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Candidate saved successfully!');
+                closeCandidateModal();
+                loadCandidates();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error saving candidate');
+            });
+        }
+
+        function editCandidate(id) {
+            alert('Edit candidate ' + id);
+        }
+
+        function deleteCandidate(id) {
+            if (confirm('Are you sure you want to delete this candidate?')) {
+                fetch(`${API_BASE_URL}/api/candidates/${id}`, {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    alert('Candidate deleted successfully!');
+                    loadCandidates();
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('Error deleting candidate');
+                });
+            }
+        }
+
+        function exportCandidatesToExcel() {
+            fetch(`${API_BASE_URL}/api/candidates`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
+                XLSX.writeFile(wb, 'candidates-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== REPORTS FUNCTIONALITY ====================
+        function loadReports() {
+            fetch(`${API_BASE_URL}/api/reports`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayReports(data);
+            })
+            .catch(error => {
+                console.error('Error loading reports:', error);
+                document.getElementById('reportsContainer').innerHTML = '<div class="error">Error loading reports</div>';
+            });
+        }
+
+        function displayReports(data) {
+            let html = '<div style="background: white; padding: 20px; border-radius: 8px;">';
+            html += '<h3>Biometric Verification Summary</h3>';
+            html += '<table><thead><tr><th>Metric</th><th>Value</th></tr></thead><tbody>';
+            html += `<tr><td>Total Candidates</td><td>${data.totalCandidates || 0}</td></tr>`;
+            html += `<tr><td>Biometric Captured</td><td>${data.biometricCaptured || 0}</td></tr>`;
+            html += `<tr><td>Biometric Verified</td><td>${data.biometricVerified || 0}</td></tr>`;
+            html += `<tr><td>Pending Verification</td><td>${data.pendingVerification || 0}</td></tr>`;
+            html += `<tr><td>Success Rate</td><td>${data.successRate || 0}%</td></tr>`;
+            html += '</tbody></table>';
+            html += '</div>';
+            document.getElementById('reportsContainer').innerHTML = html;
+        }
+
+        function exportReportsPDF() {
+            const element = document.getElementById('reportsContainer');
+            const opt = {
+                margin: 10,
+                filename: 'reports.pdf',
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2 },
+                jsPDF: { orientation: 'portrait', unit: 'mm', format: 'a4' }
+            };
+            html2pdf().set(opt).from(element).save();
+        }
+
+        function exportReportsExcel() {
+            fetch(`${API_BASE_URL}/api/reports`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet([data]);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Reports');
+                XLSX.writeFile(wb, 'reports-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        function exportDashboardToExcel() {
+            fetch(`${API_BASE_URL}/api/centres/data`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Dashboard');
+                XLSX.writeFile(wb, 'dashboard-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error:', error);
                 alert('Error exporting data');
             });
         }
@@ -586,6 +1569,18 @@
             // Load data for the page
             if (pageName === 'dashboard') {
                 loadDashboard();
+            } else if (pageName === 'exams') {
+                loadExams();
+            } else if (pageName === 'slots') {
+                loadSlots();
+            } else if (pageName === 'centres') {
+                loadCentres();
+            } else if (pageName === 'operators') {
+                loadOperators();
+            } else if (pageName === 'candidates') {
+                loadCandidates();
+            } else if (pageName === 'reports') {
+                loadReports();
             }
         }
 
