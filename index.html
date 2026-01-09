@@ -4,90 +4,301 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>MPA Biometric Admin Panel - Complete Integration</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/chart.js/3.9.1/chart.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.min.js"></script>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
-        .container { display: flex; height: 100vh; }
-        .sidebar { width: 180px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 0; overflow-y: auto; }
-        .sidebar-item { padding: 20px 15px; cursor: pointer; border-left: 4px solid transparent; transition: 0.3s; text-align: center; font-size: 12px; font-weight: 600; }
-        .sidebar-item:hover, .sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
-        .sidebar-icon { font-size: 28px; margin-bottom: 8px; }
-        .main { flex: 1; display: flex; flex-direction: column; }
-        .header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
-        .header h1 { font-size: 22px; font-weight: 700; }
-        .header-controls { display: flex; gap: 15px; align-items: center; }
-        .header-controls select { padding: 8px 12px; border: none; border-radius: 4px; background: white; color: #333; cursor: pointer; font-size: 13px; }
-        .header-controls button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.3s; }
-        .btn-sync { background: #27ae60; color: white; }
-        .btn-sync:hover { background: #229954; }
-        .btn-logout-all { background: #f39c12; color: white; }
-        .btn-logout-all:hover { background: #e67e22; }
-        .btn-logout { background: #e74c3c; color: white; }
-        .btn-logout:hover { background: #c0392b; }
-        .content { flex: 1; overflow-y: auto; padding: 25px; }
-        .tab-content { display: none; }
-        .tab-content.active { display: block; animation: fadeIn 0.3s; }
-        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
-        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid; }
-        .stat-card.blue { border-top-color: #0d7377; }
-        .stat-card.green { border-top-color: #27ae60; }
-        .stat-card.orange { border-top-color: #f39c12; }
-        .stat-card.teal { border-top-color: #16a085; }
-        .stat-number { font-size: 36px; font-weight: 700; color: #0d7377; }
-        .stat-label { color: #666; margin-top: 8px; font-size: 13px; font-weight: 600; }
-        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
-        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; }
-        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; }
-        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
-        .table-controls button { padding: 8px 16px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
-        .table-controls button:hover { background: #0a5a66; }
-        table { width: 100%; border-collapse: collapse; font-size: 13px; }
-        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: 700; color: #0d7377; }
-        td { padding: 12px; border-bottom: 1px solid #eee; }
-        tr:hover { background: #f9f9f9; }
-        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
-        .badge-success { background: #d4edda; color: #155724; }
-        .badge-warning { background: #fff3cd; color: #856404; }
-        .badge-danger { background: #f8d7da; color: #721c24; }
-        .badge-info { background: #d1ecf1; color: #0c5460; }
-        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 5px; transition: 0.3s; }
-        .btn-primary { background: #0d7377; color: white; }
-        .btn-primary:hover { background: #0a5a66; }
-        .btn-success { background: #27ae60; color: white; }
-        .btn-success:hover { background: #229954; }
-        .btn-danger { background: #e74c3c; color: white; }
-        .btn-danger:hover { background: #c0392b; }
-        .btn-warning { background: #f39c12; color: white; }
-        .btn-warning:hover { background: #e67e22; }
-        .slot-box { background: #f0f8ff; padding: 12px; border-radius: 4px; margin: 8px 0; border-left: 3px solid #0d7377; }
-        .slot-title { font-weight: 600; color: #0d7377; }
-        .slot-time { color: #666; font-size: 12px; }
-        .slot-candidates { color: #27ae60; font-weight: 600; }
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: #f5f5f5;
+        }
+        .container {
+            display: flex;
+            height: 100vh;
+        }
+        .sidebar {
+            width: 200px;
+            background: #0d7377;
+            color: white;
+            padding: 20px 0;
+            overflow-y: auto;
+        }
+        .sidebar-item {
+            padding: 15px 20px;
+            cursor: pointer;
+            transition: background 0.3s;
+            border-left: 4px solid transparent;
+        }
+        .sidebar-item:hover {
+            background: #14919b;
+            border-left-color: #ffd60a;
+        }
+        .sidebar-item.active {
+            background: #14919b;
+            border-left-color: #ffd60a;
+        }
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+        .header {
+            background: #0d7377;
+            color: white;
+            padding: 15px 30px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        }
+        .header-title {
+            font-size: 24px;
+            font-weight: bold;
+        }
+        .header-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .header-controls select,
+        .header-controls button {
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .btn-sync {
+            background: #06a77d;
+            color: white;
+        }
+        .btn-logout-all {
+            background: #ffa500;
+            color: white;
+        }
+        .btn-logout {
+            background: #dc2f02;
+            color: white;
+        }
+        .btn-sync:hover {
+            background: #059669;
+        }
+        .btn-logout-all:hover {
+            background: #ff8c00;
+        }
+        .btn-logout:hover {
+            background: #bb2101;
+        }
+        .content {
+            flex: 1;
+            overflow-y: auto;
+            padding: 30px;
+        }
+        .page {
+            display: none;
+        }
+        .page.active {
+            display: block;
+        }
+        .stat-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            border-top: 4px solid #0d7377;
+        }
+        .stat-card h3 {
+            color: #666;
+            font-size: 14px;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+        }
+        .stat-card .value {
+            font-size: 32px;
+            font-weight: bold;
+            color: #0d7377;
+        }
+        .data-table {
+            background: white;
+            border-radius: 8px;
+            padding: 20px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        .data-table h2 {
+            margin-bottom: 20px;
+            color: #0d7377;
+        }
+        .table-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+        .table-controls input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .table-controls button {
+            padding: 10px 20px;
+            background: #0d7377;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .table-controls button:hover {
+            background: #14919b;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table th {
+            background: #f5f5f5;
+            padding: 12px;
+            text-align: left;
+            border-bottom: 2px solid #0d7377;
+            font-weight: bold;
+            color: #0d7377;
+        }
+        table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        table tr:hover {
+            background: #f9f9f9;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .badge-info {
+            background: #d1ecf1;
+            color: #0c5460;
+        }
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+        }
+        .modal.active {
+            display: flex;
+        }
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            text-align: center;
+            min-width: 300px;
+        }
+        .modal-content h2 {
+            margin-bottom: 20px;
+            color: #0d7377;
+        }
+        .modal-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        .modal-buttons button {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-confirm {
+            background: #06a77d;
+            color: white;
+        }
+        .btn-cancel {
+            background: #ddd;
+            color: #333;
+        }
+        .btn-confirm:hover {
+            background: #059669;
+        }
+        .btn-cancel:hover {
+            background: #ccc;
+        }
+        .loading {
+            text-align: center;
+            padding: 20px;
+            color: #0d7377;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+        }
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="sidebar">
-            <div class="sidebar-item active" onclick="showTab('dashboard', this)"><div class="sidebar-icon">📊</div><div>DASHBOARD</div></div>
-            <div class="sidebar-item" onclick="showTab('exams', this)"><div class="sidebar-icon">📝</div><div>EXAMS</div></div>
-            <div class="sidebar-item" onclick="showTab('slots', this)"><div class="sidebar-icon">⏰</div><div>SLOTS</div></div>
-            <div class="sidebar-item" onclick="showTab('centres', this)"><div class="sidebar-icon">🏢</div><div>CENTRES</div></div>
-            <div class="sidebar-item" onclick="showTab('operators', this)"><div class="sidebar-icon">👤</div><div>OPERATORS</div></div>
-            <div class="sidebar-item" onclick="showTab('candidates', this)"><div class="sidebar-icon">👥</div><div>CANDIDATES</div></div>
-            <div class="sidebar-item" onclick="showTab('reports', this)"><div class="sidebar-icon">📋</div><div>REPORTS</div></div>
+            <div style="padding: 0 20px; margin-bottom: 30px; font-size: 20px; font-weight: bold;">📊 MPA</div>
+            <div class="sidebar-item active" onclick="showPage('dashboard')">📊 DASHBOARD</div>
+            <div class="sidebar-item" onclick="showPage('exams')">📝 EXAMS</div>
+            <div class="sidebar-item" onclick="showPage('slots')">⏰ SLOTS</div>
+            <div class="sidebar-item" onclick="showPage('centres')">🏢 CENTRES</div>
+            <div class="sidebar-item" onclick="showPage('operators')">👤 OPERATORS</div>
+            <div class="sidebar-item" onclick="showPage('candidates')">👥 CANDIDATES</div>
+            <div class="sidebar-item" onclick="showPage('reports')">📋 REPORTS</div>
         </div>
 
-        <div class="main">
+        <div class="main-content">
             <div class="header">
-                <h1>MPA BIOMETRIC ADMIN PANEL</h1>
+                <div class="header-title">MPA BIOMETRIC ADMIN PANEL</div>
                 <div class="header-controls">
-                    <select id="headerExamSelect" onchange="updateAllTabs()">
+                    <select id="headerExamSelect" onchange="filterByExam(this.value)">
                         <option value="">Select Exam</option>
-                        <option value="exam_a">Exam A</option>
-                        <option value="exam_b">Exam B</option>
-                        <option value="mock_1">Mock Exam 1</option>
+                        <option value="exam-a">Exam A</option>
+                        <option value="exam-b">Exam B</option>
+                        <option value="mock-exam-1">Mock Exam 1</option>
                     </select>
                     <button class="btn-sync" onclick="syncData()">🔄 Sync Data</button>
                     <button class="btn-logout-all" onclick="logoutAll()">🚪 Logout All</button>
@@ -96,751 +307,305 @@
             </div>
 
             <div class="content">
-                <!-- DASHBOARD TAB -->
-                <div id="dashboard" class="tab-content active">
-                    <div class="table-controls" style="margin-bottom: 20px;">
-                        <label><strong>Exam-wise Filtering:</strong></label>
-                        <select id="dashExamFilter" onchange="updateDashboard()">
+                <!-- DASHBOARD PAGE -->
+                <div id="dashboard" class="page active">
+                    <div style="margin-bottom: 20px;">
+                        <label>Exam-wise Filtering:</label>
+                        <select id="dashExamFilter" onchange="filterDashboard(this.value)">
                             <option value="">All Exams</option>
-                            <option value="exam_a">Exam A</option>
-                            <option value="exam_b">Exam B</option>
-                            <option value="mock_1">Mock Exam 1</option>
+                            <option value="exam-a">Exam A</option>
+                            <option value="exam-b">Exam B</option>
+                            <option value="mock-exam-1">Mock Exam 1</option>
                         </select>
                     </div>
-                    <div class="stats-row">
-                        <div class="stat-card blue"><div class="stat-number" id="totalCandidates">0</div><div class="stat-label">TOTAL CANDIDATES</div></div>
-                        <div class="stat-card green"><div class="stat-number" id="biometricCaptured">0</div><div class="stat-label">BIOMETRIC CAPTURED</div></div>
-                        <div class="stat-card orange"><div class="stat-number" id="operatorsActive">0</div><div class="stat-label">OPERATORS ACTIVE</div></div>
-                        <div class="stat-card teal"><div class="stat-number" id="centresOnline">0</div><div class="stat-label">CENTRES ONLINE</div></div>
-                    </div>
-                    <div class="table-section">
-                        <h3>CENTRE-WISE DATA TABLE</h3>
-                        <div class="table-controls">
-                            <input type="text" placeholder="Search..." id="centreSearch" onkeyup="filterCentreTable()">
-                            <button onclick="exportCentreData()">📥 Export to Excel</button>
+
+                    <div class="stat-cards">
+                        <div class="stat-card">
+                            <h3>Total Candidates</h3>
+                            <div class="value" id="totalCandidates">-</div>
                         </div>
-                        <table>
-                            <thead><tr><th>Centre Code</th><th>Centre Name</th><th>Candidates</th><th>Biometric Status</th><th>Operator Status</th><th>Last Sync Time</th></tr></thead>
-                            <tbody id="centreTableBody"></tbody>
-                        </table>
+                        <div class="stat-card">
+                            <h3>Biometric Captured</h3>
+                            <div class="value" id="biometricCaptured">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Operators Active</h3>
+                            <div class="value" id="operatorsActive">-</div>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Centres Online</h3>
+                            <div class="value" id="centresOnline">-</div>
+                        </div>
+                    </div>
+
+                    <div class="data-table">
+                        <h2>CENTRE-WISE DATA TABLE</h2>
+                        <div class="table-controls">
+                            <input type="text" id="centreSearch" placeholder="Search...">
+                            <button onclick="exportToExcel()">📥 Export to Excel</button>
+                        </div>
+                        <div id="tableContainer">
+                            <div class="loading">Loading data from backend...</div>
+                        </div>
                     </div>
                 </div>
 
-                <!-- EXAMS TAB -->
-                <div id="exams" class="tab-content">
-                    <button class="btn btn-primary" onclick="openCreateExamModal()">+ Create Exam</button>
-                    <div class="table-section" style="margin-top: 20px;">
-                        <h3>EXAM LIST</h3>
-                        <table>
-                            <thead><tr><th>Exam Name</th><th>Status</th><th>Date</th><th>Slots</th><th>Total Candidates</th><th>Mock Control</th><th>Exam Control</th><th>Dashboard</th><th>Actions</th></tr></thead>
-                            <tbody id="examsTableBody"></tbody>
-                        </table>
-                    </div>
+                <!-- OTHER PAGES -->
+                <div id="exams" class="page">
+                    <h2>Exams Management</h2>
+                    <div class="loading">Loading exams data...</div>
                 </div>
-
-                <!-- SLOTS TAB -->
-                <div id="slots" class="tab-content">
-                    <div class="table-controls">
-                        <select id="slotExamFilter" onchange="renderSlots()">
-                            <option value="">Select Exam</option>
-                            <option value="exam_a">Exam A</option>
-                            <option value="exam_b">Exam B</option>
-                            <option value="mock_1">Mock Exam 1</option>
-                        </select>
-                    </div>
-                    <div class="table-section">
-                        <h3>EXAM SLOT ALLOCATION (TIME-WISE)</h3>
-                        <div id="slotsContainer"></div>
-                    </div>
+                <div id="slots" class="page">
+                    <h2>Slots Management</h2>
+                    <div class="loading">Loading slots data...</div>
                 </div>
-
-                <!-- CENTRES TAB -->
-                <div id="centres" class="tab-content">
-                    <div class="table-controls">
-                        <input type="text" placeholder="Search centre..." id="centreCodeSearch" onkeyup="filterCentres()">
-                        <select id="centreExamFilter" onchange="filterCentres()">
-                            <option value="">All Exams</option>
-                            <option value="exam_a">Exam A</option>
-                            <option value="exam_b">Exam B</option>
-                            <option value="mock_1">Mock Exam 1</option>
-                        </select>
-                        <button onclick="downloadCentreData()">📥 Download Centre Data</button>
-                    </div>
-                    <div class="table-section">
-                        <h3>CENTRE-WISE DATA DISTRIBUTION</h3>
-                        <table>
-                            <thead><tr><th>Centre Code</th><th>Centre Name</th><th>State</th><th>District</th><th>Exams</th><th>Total Candidates</th><th>Operators</th></tr></thead>
-                            <tbody id="centresTableBody"></tbody>
-                        </table>
-                    </div>
+                <div id="centres" class="page">
+                    <h2>Centres Management</h2>
+                    <div class="loading">Loading centres data...</div>
                 </div>
-
-                <!-- OPERATORS TAB -->
-                <div id="operators" class="tab-content">
-                    <div class="table-controls">
-                        <select id="opExamFilter" onchange="filterOperators()">
-                            <option value="">All Exams</option>
-                            <option value="exam_a">Exam A</option>
-                            <option value="exam_b">Exam B</option>
-                            <option value="mock_1">Mock Exam 1</option>
-                        </select>
-                        <select id="opCentreFilter" onchange="filterOperators()">
-                            <option value="">All Centres</option>
-                            <option value="C0001">C0001</option>
-                            <option value="C0002">C0002</option>
-                            <option value="C0003">C0003</option>
-                            <option value="C0004">C0004</option>
-                            <option value="C0005">C0005</option>
-                        </select>
-                        <input type="text" id="opSearch" placeholder="Search..." onkeyup="filterOperators()">
-                    </div>
-                    <div class="table-section">
-                        <h3>OPERATORS</h3>
-                        <table>
-                            <thead><tr><th>Operator Name</th><th>ID</th><th>Exam</th><th>Centre Code</th><th>Status</th><th>Last Check</th></tr></thead>
-                            <tbody id="operatorsTableBody"></tbody>
-                        </table>
-                    </div>
+                <div id="operators" class="page">
+                    <h2>Operators Management</h2>
+                    <div class="loading">Loading operators data...</div>
                 </div>
-
-                <!-- CANDIDATES TAB -->
-                <div id="candidates" class="tab-content">
-                    <div class="table-controls">
-                        <select id="candExamFilter" onchange="filterCandidates()">
-                            <option value="">All Exams</option>
-                            <option value="exam_a">Exam A</option>
-                            <option value="exam_b">Exam B</option>
-                            <option value="mock_1">Mock Exam 1</option>
-                        </select>
-                        <select id="candCentreFilter" onchange="filterCandidates()">
-                            <option value="">All Centres</option>
-                            <option value="C0001">C0001</option>
-                            <option value="C0002">C0002</option>
-                            <option value="C0003">C0003</option>
-                            <option value="C0004">C0004</option>
-                            <option value="C0005">C0005</option>
-                        </select>
-                        <select id="candStatusFilter" onchange="filterCandidates()">
-                            <option value="">All Status</option>
-                            <option value="present_yes_verify_yes">Present=Yes, Verification=Yes</option>
-                            <option value="present_yes_verify_no">Present=Yes, Verification=No</option>
-                            <option value="present_no_verify_no">Present=No, Verification=No</option>
-                        </select>
-                        <input type="text" id="candSearch" placeholder="Search..." onkeyup="filterCandidates()">
-                        <button onclick="downloadCandidateData()">📥 Download Candidates</button>
-                    </div>
-                    <div class="table-section">
-                        <h3>CANDIDATES</h3>
-                        <table>
-                            <thead>
-                                <tr>
-                                    <th>OMR No.</th>
-                                    <th>Roll No.</th>
-                                    <th>Candidate Name</th>
-                                    <th>Father Name</th>
-                                    <th>DOB</th>
-                                    <th>Centre Code</th>
-                                    <th>Upload Photo</th>
-                                    <th>Verified Photo</th>
-                                    <th>Fingerprint</th>
-                                    <th>Face Match %</th>
-                                    <th>Status</th>
-                                </tr>
-                            </thead>
-                            <tbody id="candidatesTableBody"></tbody>
-                        </table>
-                    </div>
+                <div id="candidates" class="page">
+                    <h2>Candidates Management</h2>
+                    <div class="loading">Loading candidates data...</div>
                 </div>
-
-                <!-- REPORTS TAB -->
-                <div id="reports" class="tab-content">
-                    <div class="table-section">
-                        <h3>AVAILABLE REPORTS & APP DOWNLOAD DATA</h3>
-                        <table>
-                            <thead><tr><th>Report Name</th><th>Description</th><th>Download</th></tr></thead>
-                            <tbody>
-                                <tr><td>📊 Biometric Status Report</td><td>All candidates with biometric capture status</td><td><button class="btn btn-success" onclick="downloadReport('biometric')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('biometric_csv')">📥 CSV</button></td></tr>
-                                <tr><td>🏢 Centre-wise Data</td><td>Centre distribution and candidate allocation</td><td><button class="btn btn-success" onclick="downloadReport('centre_data')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('centre_data_csv')">📥 CSV</button></td></tr>
-                                <tr><td>⏰ Slot Allocation Report</td><td>Exam-wise slot distribution and candidates per slot</td><td><button class="btn btn-success" onclick="downloadReport('slots')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('slots_csv')">📥 CSV</button></td></tr>
-                                <tr><td>👤 Operator Activity Report</td><td>Operator assignments and activity logs</td><td><button class="btn btn-success" onclick="downloadReport('operator')">📥 Excel</button> <button class="btn btn-success" onclick="downloadReport('operator_csv')">📥 CSV</button></td></tr>
-                                <tr><td>📱 App Download Data</td><td>All candidate data for mobile app download</td><td><button class="btn btn-success" onclick="downloadReport('app_data')">📥 JSON</button> <button class="btn btn-success" onclick="downloadReport('app_data_csv')">📥 CSV</button></td></tr>
-                            </tbody>
-                        </table>
-                    </div>
+                <div id="reports" class="page">
+                    <h2>Reports</h2>
+                    <div class="loading">Loading reports data...</div>
                 </div>
             </div>
         </div>
     </div>
 
-
-    <!-- MODALS -->
-    <!-- Create/Edit Exam Modal -->
-    <div id="examModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #0d7377; padding-bottom: 15px;">
-                <h2 id="examModalTitle" style="color: #0d7377; font-size: 18px;">Create Exam</h2>
-                <span class="close-btn" onclick="closeModal('examModal')" style="font-size: 28px; cursor: pointer; color: #999;">&times;</span>
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Exam Name</label>
-                <input type="text" id="examName" placeholder="Enter exam name" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Exam Date</label>
-                <input type="date" id="examDate" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Slot 1 Time</label>
-                <input type="time" id="slot1Time" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Slot 2 Time</label>
-                <input type="time" id="slot2Time" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Slot 3 Time (Optional)</label>
-                <input type="time" id="slot3Time" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-primary" onclick="saveExam()" style="padding: 8px 16px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">✅ Save Exam</button>
-                <button class="btn" onclick="closeModal('examModal')" style="padding: 8px 16px; background: #999; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">❌ Cancel</button>
+    <!-- LOGOUT CONFIRMATION MODAL -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <h2>Confirm Logout?</h2>
+            <p>Are you sure you want to logout?</p>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="confirmLogout()">Yes, Logout</button>
+                <button class="btn-cancel" onclick="cancelLogout()">Cancel</button>
             </div>
         </div>
     </div>
 
-    <!-- Upload Candidate Data Modal -->
-    <div id="uploadModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 700px; max-height: 85vh; overflow-y: auto; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #0d7377; padding-bottom: 15px;">
-                <h2 style="color: #0d7377; font-size: 18px;">Upload Candidate Data</h2>
-                <span class="close-btn" onclick="closeModal('uploadModal')" style="font-size: 28px; cursor: pointer; color: #999;">&times;</span>
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Select Data Type</label>
-                <select id="uploadType" onchange="updatePasswordFields()" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-                    <option value="">Select Type</option>
-                    <option value="mock">Mock Data</option>
-                    <option value="exam">Exam Data</option>
-                </select>
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Upload Excel File</label>
-                <input type="file" id="uploadFile" accept=".xlsx,.xls,.csv" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-            </div>
-            <div class="form-group" style="margin-bottom: 15px;">
-                <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Expected Format: Centre Code, Centre Name, Student Name, Father Name, DOB, Slot Time, Photo</label>
-            </div>
-            
-            <div id="mockPasswordSection" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 4px; margin: 15px 0;">
-                <h4 style="color: #0d7377; margin-bottom: 12px;">🔐 Mock Data Password</h4>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Set Password for Mock Candidates</label>
-                    <input type="text" id="mockPassword" placeholder="Enter password for mock data" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-                </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Confirm Password</label>
-                    <input type="text" id="mockPasswordConfirm" placeholder="Confirm password" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-                </div>
-                <button class="btn btn-warning" onclick="generateMockPassword()" style="padding: 8px 16px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-top: 8px;">🔄 Generate Random Password</button>
-                <div id="mockPasswordDisplay" style="margin-top: 10px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #f39c12; display: none;">
-                    <strong>Generated Password:</strong> <span id="mockPasswordValue"></span>
-                    <button class="btn btn-success" onclick="copyToClipboard('mockPasswordValue')" style="padding: 6px 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 10px;">📋 Copy</button>
-                </div>
-            </div>
-            
-            <div id="examPasswordSection" style="display: none; background: #f9f9f9; padding: 15px; border-radius: 4px; margin: 15px 0;">
-                <h4 style="color: #0d7377; margin-bottom: 12px;">🔐 Exam Data Password</h4>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Set Password for Exam Candidates</label>
-                    <input type="text" id="examPassword" placeholder="Enter password for exam data" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-                </div>
-                <div class="form-group" style="margin-bottom: 15px;">
-                    <label style="display: block; margin-bottom: 5px; color: #333; font-weight: 600; font-size: 13px;">Confirm Password</label>
-                    <input type="text" id="examPasswordConfirm" placeholder="Confirm password" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px;">
-                </div>
-                <button class="btn btn-warning" onclick="generateExamPassword()" style="padding: 8px 16px; background: #f39c12; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-top: 8px;">🔄 Generate Random Password</button>
-                <div id="examPasswordDisplay" style="margin-top: 10px; padding: 10px; background: white; border-radius: 4px; border-left: 3px solid #27ae60; display: none;">
-                    <strong>Generated Password:</strong> <span id="examPasswordValue"></span>
-                    <button class="btn btn-success" onclick="copyToClipboard('examPasswordValue')" style="padding: 6px 12px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 10px;">📋 Copy</button>
-                </div>
-            </div>
-            
-            <div class="form-actions" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn btn-primary" onclick="uploadCandidateData()" style="padding: 8px 16px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📤 Upload</button>
-                <button class="btn" onclick="closeModal('uploadModal')" style="padding: 8px 16px; background: #999; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">❌ Cancel</button>
+    <!-- LOGOUT ALL CONFIRMATION MODAL -->
+    <div id="logoutAllModal" class="modal">
+        <div class="modal-content">
+            <h2>Logout All Operators?</h2>
+            <p>This will logout all operators from all centres. Continue?</p>
+            <div class="modal-buttons">
+                <button class="btn-confirm" onclick="confirmLogoutAll()">Yes, Logout All</button>
+                <button class="btn-cancel" onclick="cancelLogoutAll()">Cancel</button>
             </div>
         </div>
     </div>
 
     <script>
-        const examStates = {
-            exam_a: { mockStatus: 'Inactive', examStatus: 'Active' },
-            exam_b: { mockStatus: 'Inactive', examStatus: 'Inactive' },
-            mock_1: { mockStatus: 'Active', examStatus: 'Inactive' }
-        };
+        // ==================== CONFIGURATION ====================
+        const API_BASE_URL = 'http://13.204.65.158'; // Backend API
+        const ADMIN_USERNAME = 'Mehul2026';
+        const ADMIN_PASSWORD = 'Mehul@7300';
 
-        const examSlots = {
-            exam_a: { name: 'Exam A', date: '2025-01-15', slots: [{ slot: 1, time: '09:00 AM - 11:30 AM', candidates: 95 }, { slot: 2, time: '01:00 PM - 03:30 PM', candidates: 87 }, { slot: 3, time: '04:00 PM - 06:30 PM', candidates: 78 }], totalCandidates: 260, centres: ['C0001', 'C0002', 'C0003', 'C0004'] },
-            exam_b: { name: 'Exam B', date: '2025-01-20', slots: [{ slot: 1, time: '09:00 AM - 11:30 AM', candidates: 72 }, { slot: 2, time: '01:00 PM - 03:30 PM', candidates: 68 }, { slot: 3, time: '04:00 PM - 06:30 PM', candidates: 65 }], totalCandidates: 205, centres: ['C0002', 'C0003', 'C0005'] },
-            mock_1: { name: 'Mock Exam 1', date: '2025-01-10', slots: [{ slot: 1, time: '10:00 AM - 12:00 PM', candidates: 120 }, { slot: 2, time: '02:00 PM - 04:00 PM', candidates: 115 }], totalCandidates: 235, centres: ['C0001', 'C0004', 'C0005'] }
-        };
-
-        const centreData = {
-            C0001: { code: 'C0001', name: 'Main Exam 1 Subsidiary', state: 'Maharashtra', district: 'Mumbai', exams: ['exam_a', 'mock_1'], candidatesByExam: { exam_a: 65, mock_1: 58 }, operatorsByExam: { exam_a: 2, mock_1: 1 }, biometricStatus: 'Successful', operatorStatus: 'Operated', lastSync: '2025-01-01 10:30:35' },
-            C0002: { code: 'C0002', name: 'Regional Centre Mumbai', state: 'Maharashtra', district: 'Mumbai', exams: ['exam_a', 'exam_b'], candidatesByExam: { exam_a: 72, exam_b: 68 }, operatorsByExam: { exam_a: 2, exam_b: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:34' },
-            C0003: { code: 'C0003', name: 'State Exam Centre', state: 'Maharashtra', district: 'Pune', exams: ['exam_a', 'exam_b'], candidatesByExam: { exam_a: 75, exam_b: 70 }, operatorsByExam: { exam_a: 2, exam_b: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:38' },
-            C0004: { code: 'C0004', name: 'Main Exam 1 Subsidiary', state: 'Maharashtra', district: 'Nagpur', exams: ['exam_a', 'mock_1'], candidatesByExam: { exam_a: 48, mock_1: 62 }, operatorsByExam: { exam_a: 1, mock_1: 2 }, biometricStatus: 'Successful', operatorStatus: 'Operated', lastSync: '2025-01-01 10:30:35' },
-            C0005: { code: 'C0005', name: 'Regional Centre Aurangabad', state: 'Maharashtra', district: 'Aurangabad', exams: ['exam_b', 'mock_1'], candidatesByExam: { exam_b: 67, mock_1: 75 }, operatorsByExam: { exam_b: 2, mock_1: 2 }, biometricStatus: 'Biometric', operatorStatus: 'Operation', lastSync: '2025-01-01 10:30:38' }
-        };
-
-        const mockData = {
-            centres: [
-                { code: 'C0001', name: 'Main Exam 1 Subsidiary', candidates: 123, biometric: 'Successful', operator: 'Operated', lastSync: '2025-01-01 10:30:35' },
-                { code: 'C0002', name: 'Regional Centre Mumbai', candidates: 140, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:34' },
-                { code: 'C0003', name: 'State Exam Centre', candidates: 145, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:38' },
-                { code: 'C0004', name: 'Main Exam 1 Subsidiary', candidates: 110, biometric: 'Successful', operator: 'Operated', lastSync: '2025-01-01 10:30:35' },
-                { code: 'C0005', name: 'Regional Centre Aurangabad', candidates: 142, biometric: 'Biometric', operator: 'Operation', lastSync: '2025-01-01 10:30:38' }
-            ],
-            operators: [
-                { name: 'Operator 1', id: 'OP001', exam: 'exam_a', centre: 'C0001', status: 'Active', lastCheck: '2025-01-01 10:30' },
-                { name: 'Operator 2', id: 'OP002', exam: 'exam_b', centre: 'C0002', status: 'Inactive', lastCheck: '2025-01-01 09:15' },
-                { name: 'Operator 3', id: 'OP003', exam: 'exam_a', centre: 'C0003', status: 'Active', lastCheck: '2025-01-01 10:45' },
-                { name: 'Operator 4', id: 'OP004', exam: 'mock_1', centre: 'C0001', status: 'Active', lastCheck: '2025-01-01 10:50' },
-                { name: 'Operator 5', id: 'OP005', exam: 'exam_b', centre: 'C0005', status: 'Active', lastCheck: '2025-01-01 10:55' }
-            ],
-            candidates: [
-                { omr: '11000001', roll: '11000001', name: 'Candidate 1', father: 'Father 1', dob: '1995-05-15', centre: 'C0001', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+1', registeredPhotoUrl: 'https://via.placeholder.com/150?text=Registered+1', fingerprintUrl: 'https://via.placeholder.com/150?text=Fingerprint+1', faceMatch: '98.5%', exam: 'exam_a', status: 'Verified' },
-                { omr: '11000002', roll: '11000002', name: 'Candidate 2', father: 'Father 2', dob: '1996-03-22', centre: 'C0002', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+2', registeredPhotoUrl: '-', fingerprintUrl: 'https://via.placeholder.com/150?text=Fingerprint+2', faceMatch: '-', exam: 'exam_a', status: 'Pending' },
-                { omr: '11000003', roll: '11000003', name: 'Candidate 3', father: 'Father 3', dob: '1994-07-10', centre: 'C0003', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+3', registeredPhotoUrl: 'https://via.placeholder.com/150?text=Registered+3', fingerprintUrl: 'https://via.placeholder.com/150?text=Fingerprint+3', faceMatch: '97.2%', exam: 'exam_b', status: 'Verified' },
-                { omr: '11000004', roll: '11000004', name: 'Candidate 4', father: 'Father 4', dob: '1995-11-08', centre: 'C0001', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+4', registeredPhotoUrl: 'https://via.placeholder.com/150?text=Registered+4', fingerprintUrl: 'https://via.placeholder.com/150?text=Fingerprint+4', faceMatch: '99.1%', exam: 'mock_1', status: 'Verified' },
-                { omr: '11000005', roll: '11000005', name: 'Candidate 5', father: 'Father 5', dob: '1993-09-20', centre: 'C0004', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+5', registeredPhotoUrl: 'https://via.placeholder.com/150?text=Registered+5', fingerprintUrl: 'https://via.placeholder.com/150?text=Fingerprint+5', faceMatch: '96.8%', exam: 'exam_a', status: 'Verified' },
-                { omr: '11000006', roll: '11000006', name: 'Candidate 6', father: 'Father 6', dob: '1997-02-14', centre: 'C0005', uploadPhotoUrl: 'https://via.placeholder.com/150?text=Upload+6', registeredPhotoUrl: '-', fingerprintUrl: '-', faceMatch: '-', exam: 'exam_b', status: 'Not Verified' }
-            ]
-        };
-
-        function showTab(tabName, element) {
-            document.querySelectorAll('.tab-content').forEach(tab => tab.classList.remove('active'));
-            document.getElementById(tabName).classList.add('active');
-            document.querySelectorAll('.sidebar-item').forEach(item => item.classList.remove('active'));
-            element.classList.add('active');
-            
-            if (tabName === 'dashboard') updateDashboard();
-            if (tabName === 'exams') renderExamsTable();
-            if (tabName === 'slots') renderSlots();
-            if (tabName === 'centres') renderCentres();
-            if (tabName === 'operators') filterOperators();
-            if (tabName === 'candidates') filterCandidates();
-        }
-
-        function updateDashboard() {
-            const selectedExam = document.getElementById('dashExamFilter').value;
-            let totalCandidates = 0, captured = 0, operators = 0, centres = 0;
-            
-            if (!selectedExam) {
-                totalCandidates = mockData.candidates.length;
-                captured = mockData.candidates.filter(c => c.biometric === 'Captured').length;
-                operators = mockData.operators.filter(o => o.status === 'Active').length;
-                centres = new Set(mockData.centres.map(c => c.code)).size;
-            } else {
-                const exam = examSlots[selectedExam];
-                totalCandidates = exam.totalCandidates;
-                captured = Math.floor(exam.totalCandidates * 0.65);
-                operators = exam.centres.reduce((sum, c) => sum + (centreData[c].operatorsByExam[selectedExam] || 0), 0);
-                centres = exam.centres.length;
+        // ==================== SESSION MANAGEMENT ====================
+        function checkSession() {
+            const session = localStorage.getItem('adminSession');
+            if (!session) {
+                window.location.href = 'login.html';
+                return false;
             }
-            
-            document.getElementById('totalCandidates').textContent = totalCandidates;
-            document.getElementById('biometricCaptured').textContent = captured;
-            document.getElementById('operatorsActive').textContent = operators;
-            document.getElementById('centresOnline').textContent = centres;
-            
-            const tbody = document.getElementById('centreTableBody');
-            tbody.innerHTML = mockData.centres.map(c => `<tr><td>${c.code}</td><td>${c.name}</td><td>${c.candidates}</td><td><span class="badge badge-success">${c.biometric}</span></td><td><span class="badge badge-success">${c.operator}</span></td><td>${c.lastSync}</td></tr>`).join('');
+            return true;
         }
 
-        function renderExamsTable() {
-            const exams = Object.keys(examSlots).map(id => {
-                const exam = examSlots[id];
-                const state = examStates[id];
-                const mockBtnClass = state.mockStatus === 'Active' ? 'btn-danger' : 'btn-success';
-                const mockBtnText = state.mockStatus === 'Active' ? 'Stop' : 'Activate';
-                const examBtnClass = state.examStatus === 'Active' ? 'btn-danger' : 'btn-success';
-                const examBtnText = state.examStatus === 'Active' ? 'Stop' : 'Activate';
-                const overallStatus = state.mockStatus === 'Active' || state.examStatus === 'Active' ? 'Active' : 'Inactive';
-                const statusBadge = overallStatus === 'Active' ? 'badge-success' : 'badge-warning';
-                
-                const examMap = { exam_a: 'exam_a', exam_b: 'exam_b', mock_1: 'mock_1' };
-                const examKey = examMap[id] || id;
-                const dashboardUsername = examKey + '_user';
-                const dashboardPassword = examKey + '_pass';
-                return `<tr><td>${exam.name}</td><td><span class="badge ${statusBadge}">${overallStatus}</span></td><td>${exam.date}</td><td>${exam.slots.length}</td><td>${exam.totalCandidates}</td><td><button class="btn ${mockBtnClass}" onclick="toggleMockStatus('${id}')">${mockBtnText}</button></td><td><button class="btn ${examBtnClass}" onclick="toggleExamStatus('${id}')">${examBtnText}</button></td><td><button class="btn btn-success" onclick="createDashboard('${exam.name}', '${dashboardUsername}', '${dashboardPassword}')">📊 Create</button></td><td><button class="btn btn-primary" onclick="editExam('${id}')">✏️ Edit</button> <button class="btn btn-warning" onclick="openUploadModal('${id}')">📤 Upload</button></td></tr>`;
-            });
-            document.getElementById('examsTableBody').innerHTML = exams.join('');
+        function logout() {
+            document.getElementById('logoutModal').classList.add('active');
         }
 
-        function toggleMockStatus(exam) {
-            if (examStates[exam].mockStatus === 'Active') {
-                examStates[exam].mockStatus = 'Inactive';
-                alert('⏹️ Mock status: STOPPED');
-            } else {
-                examStates[exam].mockStatus = 'Active';
-                alert('▶️ Mock status: ACTIVATED');
-            }
-            renderExamsTable();
+        function confirmLogout() {
+            // Clear session
+            localStorage.removeItem('adminSession');
+            localStorage.removeItem('adminToken');
+            
+            // Redirect to login
+            window.location.href = 'login.html';
         }
 
-        function toggleExamStatus(exam) {
-            if (examStates[exam].examStatus === 'Active') {
-                examStates[exam].examStatus = 'Inactive';
-                alert('⏹️ Exam status: STOPPED');
-            } else {
-                examStates[exam].examStatus = 'Active';
-                alert('▶️ Exam status: ACTIVATED');
-            }
-            renderExamsTable();
+        function cancelLogout() {
+            document.getElementById('logoutModal').classList.remove('active');
         }
 
-        function renderSlots() {
-            const examId = document.getElementById('slotExamFilter').value;
-            if (!examId) return;
-            
-            const exam = examSlots[examId];
-            const html = exam.slots.map(slot => `
-                <div class="slot-box">
-                    <div class="slot-title">Slot ${slot.slot}: ${slot.time}</div>
-                    <div class="slot-candidates">👥 ${slot.candidates} Candidates</div>
-                </div>
-            `).join('');
-            document.getElementById('slotsContainer').innerHTML = html;
+        // ==================== LOGOUT ALL FUNCTIONALITY ====================
+        function logoutAll() {
+            document.getElementById('logoutAllModal').classList.add('active');
         }
 
-        function renderCentres() {
-            const examFilter = document.getElementById('centreExamFilter').value;
-            const search = document.getElementById('centreCodeSearch').value.toLowerCase();
-            
-            const filtered = Object.values(centreData).filter(c => 
-                (!examFilter || c.exams.includes(examFilter)) &&
-                (c.code.toLowerCase().includes(search) || c.name.toLowerCase().includes(search))
-            );
-            
-            const tbody = document.getElementById('centresTableBody');
-            tbody.innerHTML = filtered.map(c => `
-                <tr>
-                    <td>${c.code}</td>
-                    <td>${c.name}</td>
-                    <td>${c.state}</td>
-                    <td>${c.district}</td>
-                    <td>${c.exams.join(', ')}</td>
-                    <td>${Object.values(c.candidatesByExam).reduce((a,b)=>a+b,0)}</td>
-                    <td>${Object.values(c.operatorsByExam).reduce((a,b)=>a+b,0)}</td>
-                </tr>
-            `).join('');
-        }
-
-        function filterCentres() {
-            renderCentres();
-        }
-
-        function filterOperators() {
-            const exam = document.getElementById('opExamFilter').value;
-            const centre = document.getElementById('opCentreFilter').value;
-            const search = document.getElementById('opSearch').value.toLowerCase();
-            
-            const filtered = mockData.operators.filter(op => 
-                (!exam || op.exam === exam) &&
-                (!centre || op.centre === centre) &&
-                (op.name.toLowerCase().includes(search) || op.id.toLowerCase().includes(search))
-            );
-            
-            const tbody = document.getElementById('operatorsTableBody');
-            tbody.innerHTML = filtered.map(op => `<tr><td>${op.name}</td><td>${op.id}</td><td>${op.exam}</td><td>${op.centre}</td><td><span class="badge ${op.status === 'Active' ? 'badge-success' : 'badge-danger'}">${op.status}</span></td><td>${op.lastCheck}</td></tr>`).join('');
-        }
-
-        function filterCandidates() {
-            const exam = document.getElementById('candExamFilter').value;
-            const centre = document.getElementById('candCentreFilter').value;
-            const search = document.getElementById('candSearch').value.toLowerCase();
-            
-            const filtered = mockData.candidates.filter(cand => 
-                (!exam || cand.exam === exam) &&
-                (!centre || cand.centre === centre) &&
-                (cand.name.toLowerCase().includes(search) || cand.roll.toLowerCase().includes(search))
-            );
-            
-            const tbody = document.getElementById('candidatesTableBody');
-            tbody.innerHTML = filtered.map(cand => {
-                const uploadLink = cand.uploadPhotoUrl === '-' ? '-' : `<a href="${cand.uploadPhotoUrl}" target="_blank" style="color: #0d7377;">View</a>`;
-                const verifiedLink = cand.registeredPhotoUrl === '-' ? '-' : `<a href="${cand.registeredPhotoUrl}" target="_blank" style="color: #0d7377;">View</a>`;
-                const fingerprintLink = cand.fingerprintUrl === '-' ? '-' : `<a href="${cand.fingerprintUrl}" target="_blank" style="color: #0d7377;">View</a>`;
-                const statusBadge = `<span class="badge ${cand.status === 'Verified' ? 'badge-success' : cand.status === 'Pending' ? 'badge-warning' : 'badge-danger'}">${cand.status}</span>`;
-                
-                return `<tr>
-                    <td>${cand.omr}</td>
-                    <td>${cand.roll}</td>
-                    <td>${cand.name}</td>
-                    <td>${cand.father}</td>
-                    <td>${cand.dob}</td>
-                    <td>${cand.centre}</td>
-                    <td>${uploadLink}</td>
-                    <td>${verifiedLink}</td>
-                    <td>${fingerprintLink}</td>
-                    <td>${cand.faceMatch}</td>
-                    <td>${statusBadge}</td>
-                </tr>`;
-            }).join('');
-        }
-
-        function downloadReport(type) {
-            let data = [];
-            
-            if (type === 'biometric' || type === 'biometric_csv') {
-                data = mockData.candidates.map(c => ({ 'Candidate Name': c.name, 'Roll Number': c.roll, 'Exam': c.exam, 'Centre': c.centre, 'Slot': c.slot, 'Biometric Status': c.biometric }));
-                type === 'biometric' ? downloadExcel(data, 'Biometric_Report') : downloadCSV(data, 'Biometric_Report');
-            } else if (type === 'centre_data' || type === 'centre_data_csv') {
-                data = Object.values(centreData).map(c => ({ 'Centre Code': c.code, 'Centre Name': c.name, 'State': c.state, 'District': c.district, 'Exams': c.exams.join(', '), 'Total Candidates': Object.values(c.candidatesByExam).reduce((a,b)=>a+b,0), 'Total Operators': Object.values(c.operatorsByExam).reduce((a,b)=>a+b,0) }));
-                type === 'centre_data' ? downloadExcel(data, 'Centre_Data') : downloadCSV(data, 'Centre_Data');
-            } else if (type === 'slots' || type === 'slots_csv') {
-                data = [];
-                Object.keys(examSlots).forEach(examId => {
-                    const exam = examSlots[examId];
-                    exam.slots.forEach(slot => {
-                        data.push({ 'Exam Name': exam.name, 'Exam Date': exam.date, 'Slot Number': slot.slot, 'Slot Time': slot.time, 'Candidates': slot.candidates });
-                    });
-                });
-                type === 'slots' ? downloadExcel(data, 'Slot_Allocation') : downloadCSV(data, 'Slot_Allocation');
-            } else if (type === 'operator' || type === 'operator_csv') {
-                data = mockData.operators.map(o => ({ 'Operator Name': o.name, 'Operator ID': o.id, 'Exam': o.exam, 'Centre': o.centre, 'Status': o.status, 'Last Check': o.lastCheck }));
-                type === 'operator' ? downloadExcel(data, 'Operator_Report') : downloadCSV(data, 'Operator_Report');
-            } else if (type === 'app_data' || type === 'app_data_csv') {
-                data = mockData.candidates.map(c => ({ 'Candidate Name': c.name, 'Roll Number': c.roll, 'Exam': c.exam, 'Centre Code': c.centre, 'Slot': c.slot, 'Biometric Status': c.biometric, 'Verification Status': c.verification }));
-                type === 'app_data' ? downloadJSON(data, 'App_Download_Data') : downloadCSV(data, 'App_Download_Data');
-            } else if (type === 'comprehensive' || type === 'comprehensive_csv') {
-                const selectedExam = document.getElementById('headerExamSelect').value;
-                let filtered = mockData.candidates;
-                if (selectedExam) {
-                    filtered = filtered.filter(c => c.exam === selectedExam);
+        function confirmLogoutAll() {
+            // Call backend API to logout all operators
+            fetch(`${API_BASE_URL}/api/operators/logout-all`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                 }
-                data = filtered.map(c => ({
-                    'OMR No.': c.omr,
-                    'Roll Number': c.roll,
-                    'Candidate Name': c.name,
-                    'Father Name': c.father,
-                    'DOB': c.dob,
-                    'Centre Code': c.centre,
-                    'Upload Photo URL': c.uploadPhotoUrl,
-                    'Registered Photo URL': c.registeredPhotoUrl,
-                    'Fingerprint Photo URL': c.fingerprintUrl,
-                    'Face Match %': c.faceMatch,
-                    'Status': c.status
-                }));
-                type === 'comprehensive' ? downloadExcel(data, 'Comprehensive_Candidate_Data') : downloadCSV(data, 'Comprehensive_Candidate_Data');
-            }
-        }
-
-        function downloadExcel(data, filename) {
-            const ws = XLSX.utils.json_to_sheet(data);
-            const wb = XLSX.utils.book_new();
-            XLSX.utils.book_append_sheet(wb, ws, 'Sheet1');
-            XLSX.writeFile(wb, filename + '.xlsx');
-            alert('✅ Downloaded: ' + filename + '.xlsx');
-        }
-
-        function downloadCSV(data, filename) {
-            const csv = [Object.keys(data[0]).join(','), ...data.map(row => Object.values(row).join(','))].join('\n');
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename + '.csv';
-            a.click();
-            alert('✅ Downloaded: ' + filename + '.csv');
-        }
-
-        function downloadJSON(data, filename) {
-            const json = JSON.stringify(data, null, 2);
-            const blob = new Blob([json], { type: 'application/json' });
-            const url = window.URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = filename + '.json';
-            a.click();
-            alert('✅ Downloaded: ' + filename + '.json');
-        }
-
-        function downloadCentreData() { downloadReport('centre_data'); }
-        function downloadCandidateData() { downloadReport('app_data'); }
-        function filterCentreTable() {
-            const search = document.getElementById('centreSearch').value.toLowerCase();
-            const rows = document.querySelectorAll('#centreTableBody tr');
-            rows.forEach(row => { row.style.display = row.textContent.toLowerCase().includes(search) ? '' : 'none'; });
-        }
-        function exportCentreData() { downloadReport('centre_data'); }
-        
-        // Modal Functions
-        function openModal(modalId) { document.getElementById(modalId).style.display = 'flex'; }
-        function closeModal(modalId) { document.getElementById(modalId).style.display = 'none'; }
-        
-        function openCreateExamModal() { 
-            document.getElementById('examModalTitle').textContent = 'Create Exam';
-            document.getElementById('examName').value = '';
-            document.getElementById('examDate').value = '';
-            document.getElementById('slot1Time').value = '';
-            document.getElementById('slot2Time').value = '';
-            document.getElementById('slot3Time').value = '';
-            openModal('examModal');
-        }
-        
-        function editExam(examId) {
-            const exam = examSlots[examId];
-            document.getElementById('examModalTitle').textContent = 'Edit Exam';
-            document.getElementById('examName').value = exam.name;
-            document.getElementById('examDate').value = exam.date;
-            if (exam.slots[0]) document.getElementById('slot1Time').value = exam.slots[0].time.split(' - ')[0];
-            if (exam.slots[1]) document.getElementById('slot2Time').value = exam.slots[1].time.split(' - ')[0];
-            if (exam.slots[2]) document.getElementById('slot3Time').value = exam.slots[2].time.split(' - ')[0];
-            openModal('examModal');
-        }
-        
-        function saveExam() {
-            const name = document.getElementById('examName').value;
-            const date = document.getElementById('examDate').value;
-            if (!name || !date) { alert('❌ Please fill all required fields'); return; }
-            alert('✅ Exam saved: ' + name);
-            closeModal('examModal');
-            renderExamsTable();
-        }
-        
-        function uploadCandidateData() {
-            const type = document.getElementById('uploadType').value;
-            const file = document.getElementById('uploadFile').files[0];
-            if (!type || !file) { alert('❌ Please select type and file'); return; }
-            
-            if (type === 'mock') {
-                const pwd = document.getElementById('mockPassword').value;
-                const pwdConfirm = document.getElementById('mockPasswordConfirm').value;
-                if (!pwd || pwd !== pwdConfirm) { alert('❌ Passwords do not match'); return; }
-                alert('✅ Mock data uploaded with password: ' + pwd);
-            } else {
-                const pwd = document.getElementById('examPassword').value;
-                const pwdConfirm = document.getElementById('examPasswordConfirm').value;
-                if (!pwd || pwd !== pwdConfirm) { alert('❌ Passwords do not match'); return; }
-                alert('✅ Exam data uploaded with password: ' + pwd);
-            }
-            closeModal('uploadModal');
-        }
-        
-        function updatePasswordFields() {
-            const type = document.getElementById('uploadType').value;
-            document.getElementById('mockPasswordSection').style.display = type === 'mock' ? 'block' : 'none';
-            document.getElementById('examPasswordSection').style.display = type === 'exam' ? 'block' : 'none';
-        }
-        
-        function generateMockPassword() {
-            const pwd = generatePassword();
-            document.getElementById('mockPassword').value = pwd;
-            document.getElementById('mockPasswordConfirm').value = pwd;
-            document.getElementById('mockPasswordValue').textContent = pwd;
-            document.getElementById('mockPasswordDisplay').style.display = 'block';
-        }
-        
-        function generateExamPassword() {
-            const pwd = generatePassword();
-            document.getElementById('examPassword').value = pwd;
-            document.getElementById('examPasswordConfirm').value = pwd;
-            document.getElementById('examPasswordValue').textContent = pwd;
-            document.getElementById('examPasswordDisplay').style.display = 'block';
-        }
-        
-        function generatePassword() {
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
-            let pwd = '';
-            for (let i = 0; i < 12; i++) pwd += chars.charAt(Math.floor(Math.random() * chars.length));
-            return pwd;
-        }
-        
-        function copyToClipboard(elementId) {
-            const text = document.getElementById(elementId).textContent;
-            navigator.clipboard.writeText(text).then(() => alert('✅ Copied to clipboard'));
-        }
-        
-        function openUploadModal(examId) {
-            document.getElementById('uploadType').value = '';
-            document.getElementById('uploadFile').value = '';
-            document.getElementById('mockPassword').value = '';
-            document.getElementById('mockPasswordConfirm').value = '';
-            document.getElementById('examPassword').value = '';
-            document.getElementById('examPasswordConfirm').value = '';
-            document.getElementById('mockPasswordDisplay').style.display = 'none';
-            document.getElementById('examPasswordDisplay').style.display = 'none';
-            document.getElementById('mockPasswordSection').style.display = 'none';
-            document.getElementById('examPasswordSection').style.display = 'none';
-            openModal('uploadModal');
-        }
-        
-        function syncData() { alert('🔄 Syncing data...'); }
-        function logoutAll() { if (confirm('Logout all?')) alert('✅ All logged out'); }
-        function logout() { if (confirm('Logout?')) alert('✅ Logged out'); }
-        function updateAllTabs() { updateDashboard(); }
-        
-        function createDashboard(examName, username, password) {
-            const dashboardUrl = 'http://13.204.65.158:8080/dashboard';
-            document.getElementById('dashboardExamName').textContent = 'Exam: ' + examName;
-            document.getElementById('dashboardUsername').textContent = username;
-            document.getElementById('dashboardPassword').textContent = password;
-            document.getElementById('dashboardLink').textContent = dashboardUrl;
-            document.getElementById('dashboardLink').href = dashboardUrl;
-            openModal('dashboardModal');
-        }
-        
-        function copyDashboardLink() {
-            const url = document.getElementById('dashboardLink').textContent;
-            navigator.clipboard.writeText(url).then(() => {
-                alert('✅ Link copied to clipboard!');
-            }).catch(() => {
-                alert('URL: ' + url);
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('All operators logged out successfully!');
+                document.getElementById('logoutAllModal').classList.remove('active');
+                loadDashboard();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error logging out operators');
             });
         }
-        
-        function openDashboardLink() {
-            const url = document.getElementById('dashboardLink').href;
-            window.open(url, '_blank');
+
+        function cancelLogoutAll() {
+            document.getElementById('logoutAllModal').classList.remove('active');
         }
 
-        updateDashboard();
-        renderExamsTable();
-    </script>
-    
-    <!-- DASHBOARD CREDENTIALS MODAL -->
-    <div id="dashboardModal" class="modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); z-index: 1000; align-items: center; justify-content: center;">
-        <div class="modal-content" style="background: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 600px; box-shadow: 0 5px 20px rgba(0,0,0,0.3);">
-            <div class="modal-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 2px solid #0d7377; padding-bottom: 15px;">
-                <h2 style="color: #0d7377; font-size: 18px;">📊 Dashboard Credentials</h2>
-                <span class="close-btn" onclick="closeModal('dashboardModal')" style="font-size: 28px; cursor: pointer; color: #999;">&times;</span>
-            </div>
-            <div style="background: #d4edda; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #27ae60;">
-                <p style="color: #155724; font-weight: 600; margin-bottom: 10px;">✅ Dashboard Created Successfully!</p>
-                <p id="dashboardExamName" style="color: #155724; font-size: 14px; margin: 0;"></p>
-            </div>
-            <div style="background: #f9f9f9; padding: 15px; border-radius: 4px; margin-bottom: 20px;">
-                <p style="color: #333; font-weight: 600; margin-bottom: 10px;">📝 Login Credentials:</p>
-                <div style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 10px; border: 1px solid #ddd;">
-                    <p style="margin: 5px 0; color: #666;"><strong>Username:</strong> <span id="dashboardUsername" style="color: #0d7377; font-weight: 600;"></span></p>
-                    <p style="margin: 5px 0; color: #666;"><strong>Password:</strong> <span id="dashboardPassword" style="color: #0d7377; font-weight: 600;"></span></p>
-                </div>
-            </div>
-            <div style="background: #e7f3ff; padding: 15px; border-radius: 4px; margin-bottom: 20px; border-left: 4px solid #0d7377;">
-                <p style="color: #0d7377; font-weight: 600; margin-bottom: 10px;">🔗 Dashboard Link:</p>
-                <div style="background: white; padding: 10px; border-radius: 4px; border: 1px solid #0d7377; word-break: break-all;">
-                    <a id="dashboardLink" href="" target="_blank" style="color: #0d7377; text-decoration: underline; font-weight: 600; cursor: pointer;"></a>
-                </div>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn btn-primary" onclick="copyDashboardLink()" style="padding: 10px 20px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">📋 Copy Link</button>
-                <button class="btn btn-success" onclick="openDashboardLink()" style="padding: 10px 20px; background: #27ae60; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">🔗 Open Dashboard</button>
-                <button class="btn btn-secondary" onclick="closeModal('dashboardModal')" style="padding: 10px 20px; background: #999; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">Close</button>
-            </div>
-        </div>
-    </div>
+        // ==================== SYNC DATA FUNCTIONALITY ====================
+        function syncData() {
+            fetch(`${API_BASE_URL}/api/sync/trigger`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Sync triggered successfully!');
+                loadDashboard();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error triggering sync');
+            });
+        }
 
+        // ==================== DASHBOARD FUNCTIONALITY ====================
+        function loadDashboard() {
+            // Check session first
+            if (!checkSession()) return;
+
+            // Fetch stats from backend
+            fetch(`${API_BASE_URL}/api/dashboard/stats`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('totalCandidates').textContent = data.totalCandidates || 0;
+                document.getElementById('biometricCaptured').textContent = data.biometricCaptured || 0;
+                document.getElementById('operatorsActive').textContent = data.operatorsActive || 0;
+                document.getElementById('centresOnline').textContent = data.centresOnline || 0;
+                loadCentreData();
+            })
+            .catch(error => {
+                console.error('Error loading stats:', error);
+                document.getElementById('tableContainer').innerHTML = '<div class="error">Error loading data from backend</div>';
+            });
+        }
+
+        function loadCentreData() {
+            fetch(`${API_BASE_URL}/api/centres/data`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                displayCentreTable(data);
+            })
+            .catch(error => {
+                console.error('Error loading centre data:', error);
+                document.getElementById('tableContainer').innerHTML = '<div class="error">Error loading centre data</div>';
+            });
+        }
+
+        function displayCentreTable(data) {
+            let html = '<table><thead><tr><th>Centre Code</th><th>Centre Name</th><th>Candidates</th><th>Biometric Status</th><th>Operator Status</th><th>Last Sync Time</th></tr></thead><tbody>';
+            
+            data.forEach(centre => {
+                html += `<tr>
+                    <td>${centre.code}</td>
+                    <td>${centre.name}</td>
+                    <td>${centre.candidates}</td>
+                    <td><span class="badge badge-${centre.biometricStatus === 'Successful' ? 'success' : 'warning'}">${centre.biometricStatus}</span></td>
+                    <td><span class="badge badge-info">${centre.operatorStatus}</span></td>
+                    <td>${centre.lastSyncTime}</td>
+                </tr>`;
+            });
+            
+            html += '</tbody></table>';
+            document.getElementById('tableContainer').innerHTML = html;
+        }
+
+        // ==================== EXPORT FUNCTIONALITY ====================
+        function exportToExcel() {
+            fetch(`${API_BASE_URL}/api/centres/export`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                const ws = XLSX.utils.json_to_sheet(data);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Centres');
+                XLSX.writeFile(wb, 'centres-data.xlsx');
+            })
+            .catch(error => {
+                console.error('Error exporting data:', error);
+                alert('Error exporting data');
+            });
+        }
+
+        // ==================== PAGE NAVIGATION ====================
+        function showPage(pageName) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // Remove active from sidebar
+            document.querySelectorAll('.sidebar-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected page
+            document.getElementById(pageName).classList.add('active');
+            
+            // Add active to sidebar
+            event.target.classList.add('active');
+            
+            // Load data for the page
+            if (pageName === 'dashboard') {
+                loadDashboard();
+            }
+        }
+
+        // ==================== FILTER FUNCTIONALITY ====================
+        function filterByExam(examId) {
+            console.log('Filter by exam:', examId);
+            loadDashboard();
+        }
+
+        function filterDashboard(examId) {
+            console.log('Dashboard filter:', examId);
+            loadDashboard();
+        }
+
+        // ==================== INITIALIZATION ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            if (checkSession()) {
+                loadDashboard();
+            }
+        });
+    </script>
 </body>
 </html>
