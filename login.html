@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPA Biometric Admin Panel - Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0d7377 0%, #14919b 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .login-container {
+            background: white;
+            padding: 40px;
+            border-radius: 10px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .login-header h1 {
+            color: #0d7377;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+        .form-group {
+            margin-bottom: 20px;
+        }
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .form-group input:focus {
+            outline: none;
+            border-color: #0d7377;
+            box-shadow: 0 0 5px rgba(13, 115, 119, 0.3);
+        }
+        .login-button {
+            width: 100%;
+            padding: 12px;
+            background: #0d7377;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .login-button:hover {
+            background: #14919b;
+        }
+        .login-button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #f5c6cb;
+            display: none;
+        }
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 12px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border: 1px solid #c3e6cb;
+            display: none;
+        }
+        .loading {
+            display: none;
+            text-align: center;
+            color: #0d7377;
+            margin-top: 10px;
+        }
+        .credentials-info {
+            background: #e7f3ff;
+            padding: 12px;
+            border-radius: 5px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #0066cc;
+            border: 1px solid #b3d9ff;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>🔐 MPA Admin Login</h1>
+            <p>MPA Biometric Exam System</p>
+        </div>
+
+        <div class="error-message" id="errorMessage"></div>
+        <div class="success-message" id="successMessage"></div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input 
+                    type="text" 
+                    id="username" 
+                    name="username" 
+                    placeholder="Enter your username"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input 
+                    type="password" 
+                    id="password" 
+                    name="password" 
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" class="login-button" id="loginButton">
+                Login
+            </button>
+
+            <div class="loading" id="loading">
+                <p>Authenticating... Please wait</p>
+            </div>
+        </form>
+
+        <div class="credentials-info">
+            <strong>Demo Credentials:</strong><br>
+            Username: Mehul2026<br>
+            Password: Mehul@7300
+        </div>
+    </div>
+
+    <script>
+        // ==================== CONFIGURATION ====================
+        const API_BASE_URL = 'http://13.204.65.158'; // Backend API
+        const ADMIN_USERNAME = 'Mehul2026';
+        const ADMIN_PASSWORD = 'Mehul@7300';
+        const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
+
+        // ==================== CHECK IF ALREADY LOGGED IN ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            const session = localStorage.getItem('adminSession');
+            if (session) {
+                window.location.href = 'index.html';
+            }
+        });
+
+        // ==================== LOGIN HANDLER ====================
+        function handleLogin(event) {
+            event.preventDefault();
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            // Clear previous messages
+            document.getElementById('errorMessage').style.display = 'none';
+            document.getElementById('successMessage').style.display = 'none';
+
+            // Validate inputs
+            if (!username || !password) {
+                showError('Please enter both username and password');
+                return;
+            }
+
+            // Show loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('loginButton').disabled = true;
+
+            // Attempt login with backend API
+            fetch(`${API_BASE_URL}/api/admin/login`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    username: username,
+                    password: password
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('loginButton').disabled = false;
+
+                if (data.success) {
+                    // Store session data
+                    localStorage.setItem('adminSession', JSON.stringify({
+                        username: username,
+                        loginTime: new Date().getTime()
+                    }));
+                    
+                    // Store token if provided
+                    if (data.token) {
+                        localStorage.setItem('adminToken', data.token);
+                    }
+
+                    // Show success message
+                    showSuccess('Login successful! Redirecting...');
+
+                    // Redirect after 1 second
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showError(data.message || 'Invalid credentials');
+                }
+            })
+            .catch(error => {
+                console.error('Login error:', error);
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('loginButton').disabled = false;
+
+                // Fallback to local authentication if backend is down
+                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                    localStorage.setItem('adminSession', JSON.stringify({
+                        username: username,
+                        loginTime: new Date().getTime()
+                    }));
+                    localStorage.setItem('adminToken', 'local-token-' + Date.now());
+                    
+                    showSuccess('Login successful! Redirecting...');
+                    setTimeout(() => {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    showError('Backend connection error. Please check your credentials.');
+                }
+            });
+        }
+
+        // ==================== ERROR/SUCCESS MESSAGES ====================
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMessage');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMessage');
+            successDiv.textContent = message;
+            successDiv.style.display = 'block';
+        }
+
+        // ==================== SESSION TIMEOUT ====================
+        let sessionTimeout;
+
+        function resetSessionTimeout() {
+            clearTimeout(sessionTimeout);
+            sessionTimeout = setTimeout(() => {
+                localStorage.removeItem('adminSession');
+                localStorage.removeItem('adminToken');
+                window.location.href = 'login.html';
+            }, SESSION_TIMEOUT);
+        }
+
+        // Reset timeout on any activity
+        document.addEventListener('mousemove', resetSessionTimeout);
+        document.addEventListener('keypress', resetSessionTimeout);
+        document.addEventListener('click', resetSessionTimeout);
+    </script>
+</body>
+</html>

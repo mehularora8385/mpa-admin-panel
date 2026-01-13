@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPA Admin Login</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c7a7b 0%, #1a4d4d 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+
+        .login-container {
+            background-color: white;
+            padding: 40px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+        }
+
+        .login-header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .login-header h1 {
+            color: #2c7a7b;
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+
+        .login-header p {
+            color: #666;
+            font-size: 14px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #2c7a7b;
+            box-shadow: 0 0 5px rgba(44, 122, 123, 0.3);
+        }
+
+        .login-btn {
+            width: 100%;
+            padding: 12px;
+            background-color: #2c7a7b;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+
+        .login-btn:hover {
+            background-color: #1a4d4d;
+        }
+
+        .login-btn:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+
+        .error-message {
+            color: #f56565;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #fed7d7;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .success-message {
+            color: #22863a;
+            font-size: 14px;
+            margin-bottom: 15px;
+            padding: 10px;
+            background-color: #f0f9ff;
+            border-radius: 4px;
+            display: none;
+        }
+
+        .login-info {
+            background-color: #f0f9ff;
+            padding: 15px;
+            border-radius: 4px;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #2c5282;
+        }
+
+        .login-info strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .lockout-message {
+            color: #f56565;
+            font-size: 14px;
+            text-align: center;
+            display: none;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            color: #2c7a7b;
+        }
+
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2c7a7b;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="login-header">
+            <h1>MPA Admin Panel</h1>
+            <p>Biometric Exam Management System</p>
+        </div>
+
+        <div id="errorMessage" class="error-message"></div>
+        <div id="successMessage" class="success-message"></div>
+        <div id="lockoutMessage" class="lockout-message"></div>
+
+        <form id="loginForm">
+            <div class="form-group">
+                <label for="username">Username</label>
+                <input type="text" id="username" name="username" placeholder="Enter your username" required>
+            </div>
+
+            <div class="form-group">
+                <label for="password">Password</label>
+                <input type="password" id="password" name="password" placeholder="Enter your password" required>
+            </div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <p>Logging in...</p>
+            </div>
+
+            <button type="submit" class="login-btn" id="loginBtn">Login</button>
+        </form>
+
+        <div class="login-info">
+            <strong>Demo Credentials:</strong>
+            Username: <strong>Mehul2026</strong><br>
+            Password: <strong>Mehul@7300</strong>
+        </div>
+    </div>
+
+    <script>
+        // Configuration
+        const ADMIN_USERNAME = 'Mehul2026';
+        const ADMIN_PASSWORD = 'Mehul@7300';
+        const MAX_LOGIN_ATTEMPTS = 3;
+        const LOCKOUT_DURATION = 15 * 60 * 1000; // 15 minutes
+
+        // Get elements
+        const loginForm = document.getElementById('loginForm');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const loginBtn = document.getElementById('loginBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const lockoutMessage = document.getElementById('lockoutMessage');
+        const loading = document.getElementById('loading');
+
+        // Check if already logged in
+        function checkExistingLogin() {
+            const isLoggedIn = localStorage.getItem('adminLoggedIn');
+            if (isLoggedIn === 'true') {
+                window.location.href = 'index.html';
+            }
+        }
+
+        // Get login attempts
+        function getLoginAttempts() {
+            const attempts = localStorage.getItem('loginAttempts');
+            return attempts ? parseInt(attempts) : 0;
+        }
+
+        // Get lockout time
+        function getLockoutTime() {
+            const lockout = localStorage.getItem('lockoutTime');
+            return lockout ? parseInt(lockout) : null;
+        }
+
+        // Check if account is locked
+        function isAccountLocked() {
+            const lockoutTime = getLockoutTime();
+            if (!lockoutTime) return false;
+
+            const now = Date.now();
+            if (now < lockoutTime) {
+                return true;
+            } else {
+                // Lockout expired
+                localStorage.removeItem('lockoutTime');
+                localStorage.removeItem('loginAttempts');
+                return false;
+            }
+        }
+
+        // Show lockout message
+        function showLockout() {
+            const lockoutTime = getLockoutTime();
+            const remaining = Math.ceil((lockoutTime - Date.now()) / 1000 / 60);
+            
+            lockoutMessage.textContent = `Account locked. Try again in ${remaining} minutes.`;
+            lockoutMessage.style.display = 'block';
+            
+            loginBtn.disabled = true;
+            usernameInput.disabled = true;
+            passwordInput.disabled = true;
+        }
+
+        // Handle login
+        loginForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            // Check if account is locked
+            if (isAccountLocked()) {
+                showLockout();
+                return;
+            }
+
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+
+            // Clear messages
+            errorMessage.style.display = 'none';
+            successMessage.style.display = 'none';
+            lockoutMessage.style.display = 'none';
+
+            // Show loading
+            loading.style.display = 'block';
+            loginBtn.disabled = true;
+
+            // Simulate API call delay
+            setTimeout(function() {
+                loading.style.display = 'none';
+                loginBtn.disabled = false;
+
+                // Validate credentials
+                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
+                    // Successful login
+                    successMessage.textContent = 'Login successful! Redirecting...';
+                    successMessage.style.display = 'block';
+
+                    // Clear login attempts
+                    localStorage.removeItem('loginAttempts');
+                    localStorage.removeItem('lockoutTime');
+
+                    // Set login session
+                    localStorage.setItem('adminLoggedIn', 'true');
+                    localStorage.setItem('adminLoginTime', Date.now().toString());
+                    localStorage.setItem('adminUsername', username);
+
+                    // Redirect after 1 second
+                    setTimeout(function() {
+                        window.location.href = 'index.html';
+                    }, 1000);
+                } else {
+                    // Failed login
+                    let attempts = getLoginAttempts() + 1;
+                    localStorage.setItem('loginAttempts', attempts.toString());
+
+                    if (attempts >= MAX_LOGIN_ATTEMPTS) {
+                        // Lock account
+                        const lockoutTime = Date.now() + LOCKOUT_DURATION;
+                        localStorage.setItem('lockoutTime', lockoutTime.toString());
+                        
+                        showLockout();
+                        errorMessage.textContent = 'Too many failed attempts. Account locked for 15 minutes.';
+                    } else {
+                        const remaining = MAX_LOGIN_ATTEMPTS - attempts;
+                        errorMessage.textContent = `Invalid username or password. ${remaining} attempt(s) remaining.`;
+                    }
+
+                    errorMessage.style.display = 'block';
+                    usernameInput.value = '';
+                    passwordInput.value = '';
+                    usernameInput.focus();
+                }
+            }, 1000);
+        });
+
+        // Check existing login on page load
+        window.addEventListener('load', checkExistingLogin);
+
+        // Check lockout status
+        if (isAccountLocked()) {
+            showLockout();
+        }
+
+        // Auto-fill demo credentials button (optional)
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'd') {
+                usernameInput.value = ADMIN_USERNAME;
+                passwordInput.value = ADMIN_PASSWORD;
+            }
+        });
+    </script>
+</body>
+</html>
