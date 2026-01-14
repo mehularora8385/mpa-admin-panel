@@ -1059,7 +1059,60 @@
         }
 
         function editExam(id) {
-            alert('Edit exam ' + id);
+            // Load exam data and show edit modal
+            fetch(`${API_BASE_URL}/api/v1/exams/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('examName').value = data.name;
+                document.getElementById('examDate').value = data.date;
+                document.getElementById('examType').value = data.type;
+                document.getElementById('examCandidates').value = data.candidates;
+                document.getElementById('examStatus').value = data.status;
+                
+                // Change button to update instead of add
+                const saveBtn = document.querySelector('#examModal .btn-add');
+                saveBtn.textContent = 'Update Exam';
+                saveBtn.onclick = () => updateExam(id);
+                
+                document.getElementById('examModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading exam data');
+            });
+        }
+        
+        function updateExam(id) {
+            const examData = {
+                name: document.getElementById('examName').value,
+                date: document.getElementById('examDate').value,
+                type: document.getElementById('examType').value,
+                candidates: document.getElementById('examCandidates').value,
+                status: document.getElementById('examStatus').value
+            };
+            
+            fetch(`${API_BASE_URL}/api/v1/exams/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(examData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Exam updated successfully!');
+                closeExamModal();
+                loadExams();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating exam');
+            });
         }
 
         function deleteExam(id) {
@@ -1179,7 +1232,56 @@
         }
 
         function editSlot(id) {
-            alert('Edit slot ' + id);
+            fetch(`${API_BASE_URL}/api/v1/slots/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('slotExam').value = data.examId;
+                document.getElementById('slotStartTime').value = data.startTime;
+                document.getElementById('slotEndTime').value = data.endTime;
+                document.getElementById('slotCapacity').value = data.capacity;
+                
+                const saveBtn = document.querySelector('#slotModal .btn-add');
+                saveBtn.textContent = 'Update Slot';
+                saveBtn.onclick = () => updateSlot(id);
+                
+                document.getElementById('slotModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading slot data');
+            });
+        }
+        
+        function updateSlot(id) {
+            const slotData = {
+                examId: document.getElementById('slotExam').value,
+                startTime: document.getElementById('slotStartTime').value,
+                endTime: document.getElementById('slotEndTime').value,
+                capacity: document.getElementById('slotCapacity').value
+            };
+            
+            fetch(`${API_BASE_URL}/api/v1/slots/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(slotData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Slot updated successfully!');
+                closeSlotModal();
+                loadSlots();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating slot');
+            });
         }
 
         function deleteSlot(id) {
@@ -1300,7 +1402,56 @@
         }
 
         function editCentre(id) {
-            alert('Edit centre ' + id);
+            fetch(`${API_BASE_URL}/api/v1/centres/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('centreName').value = data.name;
+                document.getElementById('centreCode').value = data.code;
+                document.getElementById('centreLocation').value = data.location;
+                document.getElementById('centreCapacity').value = data.capacity;
+                
+                const saveBtn = document.querySelector('#centreModal .btn-add');
+                saveBtn.textContent = 'Update Centre';
+                saveBtn.onclick = () => updateCentre(id);
+                
+                document.getElementById('centreModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading centre data');
+            });
+        }
+        
+        function updateCentre(id) {
+            const centreData = {
+                name: document.getElementById('centreName').value,
+                code: document.getElementById('centreCode').value,
+                location: document.getElementById('centreLocation').value,
+                capacity: document.getElementById('centreCapacity').value
+            };
+            
+            fetch(`${API_BASE_URL}/api/v1/centres/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(centreData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Centre updated successfully!');
+                closeCentreModal();
+                loadCentres();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating centre');
+            });
         }
 
         function deleteCentre(id) {
@@ -1421,7 +1572,58 @@
         }
 
         function editOperator(id) {
-            alert('Edit operator ' + id);
+            fetch(`${API_BASE_URL}/api/v1/operators/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('operatorName').value = data.name;
+                document.getElementById('operatorEmail').value = data.email;
+                document.getElementById('operatorPhone').value = data.phone;
+                document.getElementById('operatorCentre').value = data.centreId;
+                document.getElementById('operatorStatus').value = data.status;
+                
+                const saveBtn = document.querySelector('#operatorModal .btn-add');
+                saveBtn.textContent = 'Update Operator';
+                saveBtn.onclick = () => updateOperator(id);
+                
+                document.getElementById('operatorModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading operator data');
+            });
+        }
+        
+        function updateOperator(id) {
+            const operatorData = {
+                name: document.getElementById('operatorName').value,
+                email: document.getElementById('operatorEmail').value,
+                phone: document.getElementById('operatorPhone').value,
+                centreId: document.getElementById('operatorCentre').value,
+                status: document.getElementById('operatorStatus').value
+            };
+            
+            fetch(`${API_BASE_URL}/api/v1/operators/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(operatorData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Operator updated successfully!');
+                closeOperatorModal();
+                loadOperators();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating operator');
+            });
         }
 
         function deleteOperator(id) {
@@ -1542,7 +1744,58 @@
         }
 
         function editCandidate(id) {
-            alert('Edit candidate ' + id);
+            fetch(`${API_BASE_URL}/api/v1/candidates/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('candidateName').value = data.name;
+                document.getElementById('candidateEmail').value = data.email;
+                document.getElementById('candidatePhone').value = data.phone;
+                document.getElementById('candidateExam').value = data.examId;
+                document.getElementById('candidateStatus').value = data.status;
+                
+                const saveBtn = document.querySelector('#candidateModal .btn-add');
+                saveBtn.textContent = 'Update Candidate';
+                saveBtn.onclick = () => updateCandidate(id);
+                
+                document.getElementById('candidateModal').classList.add('active');
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error loading candidate data');
+            });
+        }
+        
+        function updateCandidate(id) {
+            const candidateData = {
+                name: document.getElementById('candidateName').value,
+                email: document.getElementById('candidateEmail').value,
+                phone: document.getElementById('candidatePhone').value,
+                examId: document.getElementById('candidateExam').value,
+                status: document.getElementById('candidateStatus').value
+            };
+            
+            fetch(`${API_BASE_URL}/api/v1/candidates/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: JSON.stringify(candidateData)
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert('Candidate updated successfully!');
+                closeCandidateModal();
+                loadCandidates();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error updating candidate');
+            });
         }
 
         function deleteCandidate(id) {
