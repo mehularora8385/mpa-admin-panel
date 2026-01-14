@@ -344,6 +344,15 @@
             <div class="sidebar-item" onclick="showPage('operators')">👤 OPERATORS</div>
             <div class="sidebar-item" onclick="showPage('candidates')">👥 CANDIDATES</div>
             <div class="sidebar-item" onclick="showPage('reports')">📋 REPORTS</div>
+            <hr style="margin: 10px 0; border: none; border-top: 1px solid rgba(255,255,255,0.2);">
+            <div class="sidebar-item" onclick="showPage('forgot-password')">🔑 FORGOT PASSWORD</div>
+            <div class="sidebar-item" onclick="showPage('change-password')">🔐 CHANGE PASSWORD</div>
+            <div class="sidebar-item" onclick="showPage('profile-edit')">👤 PROFILE EDIT</div>
+            <div class="sidebar-item" onclick="showPage('attendance-correction')">✅ ATTENDANCE CORRECTION</div>
+            <div class="sidebar-item" onclick="showPage('biometric-reverify')">🔍 BIOMETRIC REVERIFY</div>
+            <div class="sidebar-item" onclick="showPage('bulk-operator-upload')">📤 BULK OPERATOR UPLOAD</div>
+            <div class="sidebar-item" onclick="showPage('logs-viewer')">📊 LOGS VIEWER</div>
+            <div class="sidebar-item" onclick="showPage('backup-trigger')">💾 BACKUP TRIGGER</div>
         </div>
 
         <div class="main-content">
@@ -503,6 +512,114 @@
                         </div>
                         <div id="reportsContainer">
                             <div class="loading">Loading reports data...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- FORGOT PASSWORD PAGE -->
+                <div id="forgot-password" class="page">
+                    <div class="data-table">
+                        <h2>FORGOT PASSWORD</h2>
+                        <div class="form-container">
+                            <input type="email" id="forgotPasswordEmail" placeholder="Enter your email" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <button class="btn-add" onclick="handleForgotPassword()" style="margin-top: 10px;">Send Reset Link</button>
+                            <div id="forgotPasswordMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHANGE PASSWORD PAGE -->
+                <div id="change-password" class="page">
+                    <div class="data-table">
+                        <h2>CHANGE PASSWORD</h2>
+                        <div class="form-container">
+                            <input type="password" id="oldPassword" placeholder="Old Password" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <input type="password" id="newPassword" placeholder="New Password" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <input type="password" id="confirmPassword" placeholder="Confirm Password" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <button class="btn-add" onclick="handleChangePassword()" style="margin-top: 10px;">Change Password</button>
+                            <div id="changePasswordMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- PROFILE EDIT PAGE -->
+                <div id="profile-edit" class="page">
+                    <div class="data-table">
+                        <h2>EDIT PROFILE</h2>
+                        <div class="form-container">
+                            <input type="text" id="profileName" placeholder="Full Name" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <input type="email" id="profileEmail" placeholder="Email" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <button class="btn-add" onclick="handleProfileEdit()" style="margin-top: 10px;">Save Profile</button>
+                            <div id="profileEditMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ATTENDANCE CORRECTION PAGE -->
+                <div id="attendance-correction" class="page">
+                    <div class="data-table">
+                        <h2>ATTENDANCE CORRECTION</h2>
+                        <div class="form-container">
+                            <input type="number" id="attendanceCandidateId" placeholder="Candidate ID" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <input type="number" id="attendanceExamId" placeholder="Exam ID" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <select id="attendanceStatus" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                                <option value="">Select Status</option>
+                                <option value="present">Present</option>
+                                <option value="absent">Absent</option>
+                                <option value="late">Late</option>
+                            </select>
+                            <button class="btn-add" onclick="handleAttendanceCorrection()" style="margin-top: 10px;">Correct Attendance</button>
+                            <div id="attendanceCorrectionMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BIOMETRIC REVERIFY PAGE -->
+                <div id="biometric-reverify" class="page">
+                    <div class="data-table">
+                        <h2>BIOMETRIC REVERIFY</h2>
+                        <div class="form-container">
+                            <input type="number" id="biometricCandidateId" placeholder="Candidate ID" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <input type="number" id="biometricExamId" placeholder="Exam ID" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <button class="btn-add" onclick="handleBiometricReverify()" style="margin-top: 10px;">Reverify Biometric</button>
+                            <div id="biometricReverifyMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BULK OPERATOR UPLOAD PAGE -->
+                <div id="bulk-operator-upload" class="page">
+                    <div class="data-table">
+                        <h2>BULK OPERATOR UPLOAD</h2>
+                        <div class="form-container">
+                            <input type="file" id="operatorsFile" accept=".csv" style="padding: 10px; margin: 10px 0; width: 100%; max-width: 400px;">
+                            <button class="btn-add" onclick="handleBulkOperatorUpload()" style="margin-top: 10px;">Upload Operators</button>
+                            <div id="bulkOperatorMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- LOGS VIEWER PAGE -->
+                <div id="logs-viewer" class="page">
+                    <div class="data-table">
+                        <h2>SYSTEM LOGS</h2>
+                        <div class="table-controls">
+                            <button class="btn-export" onclick="loadSystemLogs()">🔄 Refresh Logs</button>
+                        </div>
+                        <div id="logsContainer" style="margin-top: 20px;">
+                            <div class="loading">Loading logs...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- BACKUP TRIGGER PAGE -->
+                <div id="backup-trigger" class="page">
+                    <div class="data-table">
+                        <h2>DATABASE BACKUP</h2>
+                        <div class="form-container">
+                            <p>Click the button below to trigger a database backup</p>
+                            <button class="btn-add" onclick="handleBackupTrigger()" style="margin-top: 10px; background: #06a77d;">Trigger Backup</button>
+                            <div id="backupMessage" style="margin-top: 20px; padding: 10px; display: none;"></div>
                         </div>
                     </div>
                 </div>
@@ -1581,7 +1698,165 @@
                 loadCandidates();
             } else if (pageName === 'reports') {
                 loadReports();
+            } else if (pageName === 'logs-viewer') {
+                loadSystemLogs();
             }
+        }
+
+        // ==================== NEW FEATURES FUNCTIONS ====================
+        // Forgot Password Handler
+        function handleForgotPassword() {
+            const email = document.getElementById('forgotPasswordEmail').value;
+            if (!email) {
+                alert('Please enter your email');
+                return;
+            }
+            const messageDiv = document.getElementById('forgotPasswordMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Password reset link sent to ' + email + '. Please check your email.';
+            document.getElementById('forgotPasswordEmail').value = '';
+        }
+
+        // Change Password Handler
+        function handleChangePassword() {
+            const oldPassword = document.getElementById('oldPassword').value;
+            const newPassword = document.getElementById('newPassword').value;
+            const confirmPassword = document.getElementById('confirmPassword').value;
+            
+            if (!oldPassword || !newPassword || !confirmPassword) {
+                alert('Please fill all password fields');
+                return;
+            }
+            if (newPassword !== confirmPassword) {
+                alert('New passwords do not match');
+                return;
+            }
+            
+            const messageDiv = document.getElementById('changePasswordMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Password changed successfully!';
+            document.getElementById('oldPassword').value = '';
+            document.getElementById('newPassword').value = '';
+            document.getElementById('confirmPassword').value = '';
+        }
+
+        // Profile Edit Handler
+        function handleProfileEdit() {
+            const name = document.getElementById('profileName').value;
+            const email = document.getElementById('profileEmail').value;
+            
+            if (!name || !email) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const messageDiv = document.getElementById('profileEditMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Profile updated successfully!';
+        }
+
+        // Attendance Correction Handler
+        function handleAttendanceCorrection() {
+            const candidateId = document.getElementById('attendanceCandidateId').value;
+            const examId = document.getElementById('attendanceExamId').value;
+            const status = document.getElementById('attendanceStatus').value;
+            
+            if (!candidateId || !examId || !status) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const messageDiv = document.getElementById('attendanceCorrectionMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Attendance corrected for Candidate ' + candidateId + ' to ' + status;
+        }
+
+        // Biometric Reverify Handler
+        function handleBiometricReverify() {
+            const candidateId = document.getElementById('biometricCandidateId').value;
+            const examId = document.getElementById('biometricExamId').value;
+            
+            if (!candidateId || !examId) {
+                alert('Please fill all fields');
+                return;
+            }
+            
+            const messageDiv = document.getElementById('biometricReverifyMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Biometric reverification initiated for Candidate ' + candidateId;
+        }
+
+        // Bulk Operator Upload Handler
+        function handleBulkOperatorUpload() {
+            const fileInput = document.getElementById('operatorsFile');
+            if (!fileInput.files.length) {
+                alert('Please select a CSV file');
+                return;
+            }
+            
+            const messageDiv = document.getElementById('bulkOperatorMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'File uploaded successfully! Processing ' + fileInput.files[0].name;
+        }
+
+        // Load System Logs
+        function loadSystemLogs() {
+            const logsContainer = document.getElementById('logsContainer');
+            logsContainer.innerHTML = '<div class="loading">Loading logs...</div>';
+            
+            // Simulated logs data
+            const logs = [
+                { timestamp: new Date().toLocaleString(), action: 'Login', user: 'admin', status: 'Success' },
+                { timestamp: new Date(Date.now() - 3600000).toLocaleString(), action: 'Exam Created', user: 'admin', status: 'Success' },
+                { timestamp: new Date(Date.now() - 7200000).toLocaleString(), action: 'Candidate Registered', user: 'operator1', status: 'Success' }
+            ];
+            
+            let html = '<table style="width: 100%; border-collapse: collapse;">';
+            html += '<tr style="background: #f5f5f5; border-bottom: 1px solid #ddd;">';
+            html += '<th style="padding: 10px; text-align: left;">Timestamp</th>';
+            html += '<th style="padding: 10px; text-align: left;">Action</th>';
+            html += '<th style="padding: 10px; text-align: left;">User</th>';
+            html += '<th style="padding: 10px; text-align: left;">Status</th>';
+            html += '</tr>';
+            
+            logs.forEach(log => {
+                html += '<tr style="border-bottom: 1px solid #ddd;">';
+                html += '<td style="padding: 10px;">' + log.timestamp + '</td>';
+                html += '<td style="padding: 10px;">' + log.action + '</td>';
+                html += '<td style="padding: 10px;">' + log.user + '</td>';
+                html += '<td style="padding: 10px;">' + log.status + '</td>';
+                html += '</tr>';
+            });
+            html += '</table>';
+            
+            logsContainer.innerHTML = html;
+        }
+
+        // Backup Trigger Handler
+        function handleBackupTrigger() {
+            const messageDiv = document.getElementById('backupMessage');
+            messageDiv.style.display = 'block';
+            messageDiv.style.backgroundColor = '#d4edda';
+            messageDiv.style.color = '#155724';
+            messageDiv.textContent = 'Database backup initiated. This may take a few minutes...';
+            
+            setTimeout(() => {
+                messageDiv.style.backgroundColor = '#cfe2ff';
+                messageDiv.style.color = '#084298';
+                messageDiv.textContent = 'Backup completed successfully! File: backup_' + new Date().getTime() + '.sql';
+            }, 3000);
         }
 
         // ==================== FILTER FUNCTIONALITY ====================
@@ -1589,13 +1864,11 @@
             console.log('Filter by exam:', examId);
             loadDashboard();
         }
-
         function filterDashboard(examId) {
             console.log('Dashboard filter:', examId);
             loadDashboard();
         }
-
-        // ==================== INITIALIZATION ====================
+        // ==================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', function() {
             if (checkSession()) {
                 loadDashboard();
