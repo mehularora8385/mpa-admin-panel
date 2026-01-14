@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MPA Biometric Admin Panel - Final Version</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; }
+        .container { display: flex; height: 100vh; }
+        .sidebar { width: 180px; background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); color: white; padding: 0; overflow-y: auto; }
+        .sidebar-item { padding: 20px 15px; cursor: pointer; border-left: 4px solid transparent; transition: 0.3s; text-align: center; font-size: 12px; font-weight: 600; }
+        .sidebar-item:hover, .sidebar-item.active { background: rgba(0,0,0,0.2); border-left-color: #ffd700; }
+        .sidebar-icon { font-size: 28px; margin-bottom: 8px; }
+        .main { flex: 1; display: flex; flex-direction: column; }
+        .header { background: linear-gradient(135deg, #0d7377 0%, #14919b 100%); padding: 15px 30px; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .header h1 { font-size: 22px; font-weight: 700; }
+        .header-controls { display: flex; gap: 15px; align-items: center; }
+        .header-controls select { padding: 8px 12px; border: none; border-radius: 4px; background: white; color: #333; cursor: pointer; font-size: 13px; }
+        .header-controls button { padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; transition: 0.3s; }
+        .btn-sync { background: #27ae60; color: white; }
+        .btn-sync:hover { background: #229954; }
+        .btn-logout-all { background: #f39c12; color: white; }
+        .btn-logout-all:hover { background: #e67e22; }
+        .btn-logout { background: #e74c3c; color: white; }
+        .btn-logout:hover { background: #c0392b; }
+        .content { flex: 1; overflow-y: auto; padding: 25px; }
+        .tab-content { display: none; }
+        .tab-content.active { display: block; animation: fadeIn 0.3s; }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 25px; }
+        .stat-card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); border-top: 4px solid; }
+        .stat-card.blue { border-top-color: #0d7377; }
+        .stat-card.green { border-top-color: #27ae60; }
+        .stat-card.orange { border-top-color: #f39c12; }
+        .stat-card.teal { border-top-color: #16a085; }
+        .stat-number { font-size: 36px; font-weight: 700; color: #0d7377; }
+        .stat-label { color: #666; margin-top: 8px; font-size: 13px; font-weight: 600; }
+        .table-section { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        .table-section h3 { margin-bottom: 15px; color: #0d7377; font-size: 16px; }
+        .table-controls { display: flex; gap: 10px; margin-bottom: 15px; flex-wrap: wrap; align-items: center; }
+        .table-controls input, .table-controls select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; }
+        .table-controls button { padding: 8px 16px; background: #0d7377; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 13px; }
+        .table-controls button:hover { background: #0a5a66; }
+        .export-buttons { display: flex; gap: 10px; flex-wrap: wrap; }
+        .export-btn { padding: 10px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; display: flex; align-items: center; gap: 8px; transition: 0.3s; }
+        .export-btn-excel { background: #27ae60; color: white; }
+        .export-btn-excel:hover { background: #229954; }
+        .export-btn-csv { background: #0d7377; color: white; }
+        .export-btn-csv:hover { background: #0a5a66; }
+        table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        th { background: #f8f9fa; padding: 12px; text-align: left; border-bottom: 2px solid #0d7377; font-weight: 700; color: #0d7377; }
+        td { padding: 12px; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f9f9f9; }
+        .badge { display: inline-block; padding: 4px 10px; border-radius: 12px; font-size: 11px; font-weight: 600; }
+        .badge-success { background: #d4edda; color: #155724; }
+        .badge-warning { background: #fff3cd; color: #856404; }
+        .badge-danger { background: #f8d7da; color: #721c24; }
+        .badge-info { background: #d1ecf1; color: #0c5460; }
+        .btn { padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; font-weight: 600; margin-right: 5px; transition: 0.3s; }
+        .btn-primary { background: #0d7377; color: white; }
+        .btn-primary:hover { background: #0a5a66; }
+        .btn-success { background: #27ae60; color: white; }
+        .btn-success:hover { background: #229954; }
+        .btn-danger { background: #e74c3c; color: white; }
+        .btn-danger:hover { background: #c0392b; }
+        .btn-warning { background: #f39c12; color: white; }
+        .btn-warning:hover { background: #e67e22; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal.show { display: flex; align-items: center; justify-content: center; }
+        .modal-content { background-color: white; padding: 30px; border-radius: 8px; width: 90%; max-width: 400px; }
+        .modal-header { font-size: 18px; font-weight: 700; margin-bottom: 20px; color: #0d7377; }
+        .modal-close { float: right; font-size: 28px; font-weight: bold; cursor: pointer; color: #999; }
+        .modal-close:hover { color: #000; }
+        .alert { padding: 12px 16px; border-radius: 4px; margin-bottom: 15px; }
+        .alert-success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alert-error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .report-header { display: flex; gap: 15px; align-items: center; margin-bottom: 20px; flex-wrap: wrap; }
+        .report-header label { font-weight: 600; color: #0d7377; }
+        .report-header select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="sidebar">
+            <div class="sidebar-item active" onclick="showTab('dashboard', this)"><div class="sidebar-icon">📊</div><div>DASHBOARD</div></div>
+            <div class="sidebar-item" onclick="showTab('exams', this)"><div class="sidebar-icon">📝</div><div>EXAMS</div></div>
+            <div class="sidebar-item" onclick="showTab('slots', this)"><div class="sidebar-icon">⏰</div><div>SLOTS</div></div>
+            <div class="sidebar-item" onclick="showTab('centres', this)"><div class="sidebar-icon">🏢</div><div>CENTRES</div></div>
+            <div class="sidebar-item" onclick="showTab('operators', this)"><div class="sidebar-icon">👤</div><div>OPERATORS</div></div>
+            <div class="sidebar-item" onclick="showTab('candidates', this)"><div class="sidebar-icon">👥</div><div>CANDIDATES</div></div>
+            <div class="sidebar-item" onclick="showTab('reports', this)"><div class="sidebar-icon">📋</div><div>REPORTS</div></div>
+        </div>
+
+        <div class="main">
+            <div class="header">
+                <h1>MPA BIOMETRIC ADMIN PANEL</h1>
+                <div class="header-controls">
+                    <select id="headerExamSelect" onchange="updateAllTabs()">
+                        <option value="">Select Exam</option>
+                        <option value="exam_a">Exam A</option>
+                        <option value="exam_b">Exam B</option>
+                        <option value="mock_1">Mock Exam 1</option>
+                    </select>
+                    <button class="btn-sync" onclick="syncData()">🔄 Sync Data</button>
+                    <button class="btn-logout-all" onclick="logoutAll()">🚪 Logout All</button>
+                    <button class="btn-logout" onclick="logout()">🚪 Logout</button>
+                </div>
+            </div>
+
+            <div class="content">
+                <!-- DASHBOARD TAB -->
+                <div id="dashboard" class="tab-content active">
+                    <h2 style="margin-bottom: 20px; color: #0d7377;">Dashboard Overview</h2>
+                    <div class="stats-row">
+                        <div class="stat-card blue">
+                            <div class="stat-number">12</div>
+                            <div class="stat-label">Total Exams</div>
+                        </div>
+                        <div class="stat-card green">
+                            <div class="stat-number">48</div>
+                            <div class="stat-label">Total Slots</div>
+                        </div>
+                        <div class="stat-card orange">
+                            <div class="stat-number">8</div>
+                            <div class="stat-label">Total Centres</div>
+                        </div>
+                        <div class="stat-card teal">
+                            <div class="stat-number">1,250</div>
+                            <div class="stat-label">Total Candidates</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CANDIDATES TAB -->
+                <div id="candidates" class="tab-content">
+                    <div class="table-section">
+                        <h3>👥 Candidate Management</h3>
+                        <div class="table-controls">
+                            <input type="text" id="candidateSearch" placeholder="Search by OMR, Roll, Name..." onkeyup="filterCandidates()">
+                            <select id="candidateExamFilter" onchange="filterCandidates()">
+                                <option value="">All Exams</option>
+                                <option value="exam_a">Exam A</option>
+                                <option value="exam_b">Exam B</option>
+                            </select>
+                            <button onclick="downloadCandidateData()">📥 Download CSV</button>
+                            <button onclick="downloadCandidateExcel()">📊 Download Excel</button>
+                        </div>
+                        <table id="candidatesTable">
+                            <thead>
+                                <tr>
+                                    <th>OMR No.</th>
+                                    <th>Roll No.</th>
+                                    <th>Candidate Name</th>
+                                    <th>Father Name</th>
+                                    <th>DOB</th>
+                                    <th>Centre Code</th>
+                                    <th>Upload Photo</th>
+                                    <th>Verified Photo</th>
+                                    <th>Fingerprint</th>
+                                    <th>Face Match %</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody id="candidatesTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- REPORTS TAB -->
+                <div id="reports" class="tab-content">
+                    <div class="table-section">
+                        <h3>📋 AVAILABLE REPORTS & APP DOWNLOAD DATA</h3>
+                        
+                        <!-- Exam Filter -->
+                        <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 25px; padding: 15px; background: #f0f8ff; border-radius: 6px; border-left: 4px solid #0d7377;">
+                            <label for="reportExamFilter" style="font-weight: 700; color: #0d7377; font-size: 14px; white-space: nowrap;">Select Exam for Download:</label>
+                            <select id="reportExamFilter" onchange="updateReportData()" style="padding: 10px 15px; border: 2px solid #0d7377; border-radius: 4px; font-size: 14px; font-weight: 600; min-width: 150px;">
+                                <option value="">All Exams</option>
+                                <option value="exam_a">Exam A</option>
+                                <option value="exam_b">Exam B</option>
+                                <option value="mock_1">Mock Exam 1</option>
+                            </select>
+                        </div>
+
+                        <!-- Reports Table -->
+                        <table id="reportsTable" style="width: 100%; border-collapse: collapse; margin-top: 15px;">
+                            <thead>
+                                <tr style="background: #f8f9fa; border-bottom: 3px solid #0d7377;">
+                                    <th style="padding: 15px; text-align: left; color: #0d7377; font-weight: 700; font-size: 14px;">Report Name</th>
+                                    <th style="padding: 15px; text-align: left; color: #0d7377; font-weight: 700; font-size: 14px;">Description</th>
+                                    <th style="padding: 15px; text-align: center; color: #0d7377; font-weight: 700; font-size: 14px;">Download</th>
+                                </tr>
+                            </thead>
+                            <tbody id="reportsTableBody">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- EXAMS TAB -->
+                <div id="exams" class="tab-content">
+                    <div class="table-section">
+                        <h3>📝 Exam Management</h3>
+                        <div class="table-controls">
+                            <button class="btn btn-primary" onclick="addExam()">+ Add Exam</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Exam ID</th>
+                                    <th>Exam Name</th>
+                                    <th>Date</th>
+                                    <th>Status</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>exam_a</td>
+                                    <td>Exam A</td>
+                                    <td>2026-01-15</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                    <td><button class="btn btn-primary">Edit</button></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- SLOTS TAB -->
+                <div id="slots" class="tab-content">
+                    <div class="table-section">
+                        <h3>⏰ Slot Management</h3>
+                        <div class="table-controls">
+                            <button class="btn btn-primary" onclick="addSlot()">+ Add Slot</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Slot ID</th>
+                                    <th>Time</th>
+                                    <th>Capacity</th>
+                                    <th>Registered</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>slot_1</td>
+                                    <td>09:00 - 11:00</td>
+                                    <td>100</td>
+                                    <td>95</td>
+                                    <td><span class="badge badge-success">Full</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- CENTRES TAB -->
+                <div id="centres" class="tab-content">
+                    <div class="table-section">
+                        <h3>🏢 Centre Management</h3>
+                        <div class="table-controls">
+                            <button class="btn btn-primary" onclick="addCentre()">+ Add Centre</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Centre Code</th>
+                                    <th>Centre Name</th>
+                                    <th>Location</th>
+                                    <th>Capacity</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>C0001</td>
+                                    <td>Main Exam Centre</td>
+                                    <td>City Center</td>
+                                    <td>500</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- OPERATORS TAB -->
+                <div id="operators" class="tab-content">
+                    <div class="table-section">
+                        <h3>👤 Operator Management</h3>
+                        <div class="table-controls">
+                            <button class="btn btn-primary" onclick="addOperator()">+ Add Operator</button>
+                        </div>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Operator ID</th>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Centre</th>
+                                    <th>Status</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>OP001</td>
+                                    <td>John Doe</td>
+                                    <td>Invigilator</td>
+                                    <td>C0001</td>
+                                    <td><span class="badge badge-success">Active</span></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Logout Confirmation Modal -->
+    <div id="logoutModal" class="modal">
+        <div class="modal-content">
+            <span class="modal-close" onclick="closeLogoutModal()">&times;</span>
+            <div class="modal-header">Confirm Logout</div>
+            <p style="margin-bottom: 20px; color: #666;">Are you sure you want to logout?</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-danger" style="flex: 1;" onclick="confirmLogout()">Yes, Logout</button>
+                <button class="btn btn-primary" style="flex: 1;" onclick="closeLogoutModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Mock Data
+        const mockCandidates = [
+            {
+                omr_number: '11000001',
+                roll_number: '11000001',
+                candidate_name: 'Candidate 1',
+                father_name: 'Father 1',
+                dob: '1995-05-15',
+                centre_code: 'C0001',
+                exam_id: 'exam_a',
+                upload_photo: '✓',
+                verified_photo: '✓',
+                fingerprint: '✓',
+                face_match: '98.5%',
+                status: 'Verified'
+            },
+            {
+                omr_number: '11000002',
+                roll_number: '11000002',
+                candidate_name: 'Candidate 2',
+                father_name: 'Father 2',
+                dob: '1996-03-22',
+                centre_code: 'C0002',
+                exam_id: 'exam_a',
+                upload_photo: '✓',
+                verified_photo: '✗',
+                fingerprint: '✓',
+                face_match: '-',
+                status: 'Pending'
+            },
+            {
+                omr_number: '11000003',
+                roll_number: '11000003',
+                candidate_name: 'Candidate 3',
+                father_name: 'Father 3',
+                dob: '1994-07-10',
+                centre_code: 'C0001',
+                exam_id: 'exam_a',
+                upload_photo: '✓',
+                verified_photo: '✓',
+                fingerprint: '✓',
+                face_match: '97.2%',
+                status: 'Verified'
+            },
+            {
+                omr_number: '11000004',
+                roll_number: '11000004',
+                candidate_name: 'Candidate 4',
+                father_name: 'Father 4',
+                dob: '1995-11-08',
+                centre_code: 'C0003',
+                exam_id: 'exam_b',
+                upload_photo: '✓',
+                verified_photo: '✓',
+                fingerprint: '✓',
+                face_match: '99.1%',
+                status: 'Verified'
+            },
+            {
+                omr_number: '11000005',
+                roll_number: '11000005',
+                candidate_name: 'Candidate 5',
+                father_name: 'Father 5',
+                dob: '1996-06-20',
+                centre_code: 'C0002',
+                exam_id: 'exam_b',
+                upload_photo: '✓',
+                verified_photo: '✗',
+                fingerprint: '✗',
+                face_match: '-',
+                status: 'Not Verified'
+            },
+            {
+                omr_number: '11000006',
+                roll_number: '11000006',
+                candidate_name: 'Candidate 6',
+                father_name: 'Father 6',
+                dob: '1994-09-12',
+                centre_code: 'C0001',
+                exam_id: 'mock_1',
+                upload_photo: '✓',
+                verified_photo: '✓',
+                fingerprint: '✓',
+                face_match: '96.8%',
+                status: 'Verified'
+            }
+        ];
+
+        // Initialize
+        window.addEventListener('load', function() {
+            loadCandidates();
+            updateReportData();
+        });
+
+        // Tab Management
+        function showTab(tabName, element) {
+            const contents = document.querySelectorAll('.tab-content');
+            contents.forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName).classList.add('active');
+
+            const items = document.querySelectorAll('.sidebar-item');
+            items.forEach(item => item.classList.remove('active'));
+            element.classList.add('active');
+        }
+
+        // Load Candidates
+        function loadCandidates() {
+            const tbody = document.getElementById('candidatesTableBody');
+            tbody.innerHTML = '';
+            mockCandidates.forEach(candidate => {
+                const row = `<tr>
+                    <td>${candidate.omr_number}</td>
+                    <td>${candidate.roll_number}</td>
+                    <td>${candidate.candidate_name}</td>
+                    <td>${candidate.father_name}</td>
+                    <td>${candidate.dob}</td>
+                    <td>${candidate.centre_code}</td>
+                    <td>${candidate.upload_photo}</td>
+                    <td>${candidate.verified_photo}</td>
+                    <td>${candidate.fingerprint}</td>
+                    <td>${candidate.face_match}</td>
+                    <td><span class="badge ${candidate.status === 'Verified' ? 'badge-success' : candidate.status === 'Pending' ? 'badge-warning' : 'badge-danger'}">${candidate.status}</span></td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Filter Candidates
+        function filterCandidates() {
+            const searchQuery = document.getElementById('candidateSearch').value.toLowerCase();
+            const rows = document.querySelectorAll('#candidatesTableBody tr');
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchQuery) ? '' : 'none';
+            });
+        }
+
+        // Update Report Data
+        function updateReportData() {
+            const selectedExam = document.getElementById('reportExamFilter').value;
+            let filtered = mockCandidates;
+            
+            if (selectedExam) {
+                filtered = mockCandidates.filter(c => c.exam_id === selectedExam);
+            }
+
+            const tbody = document.getElementById('reportsTableBody');
+            tbody.innerHTML = '';
+
+            const reports = [
+                {
+                    name: '📊 Biometric Status Report',
+                    description: 'All candidates with biometric capture status',
+                    buttons: '<button class="btn btn-success" onclick="exportBiometricExcel()">📊 Excel</button> <button class="btn btn-primary" onclick="exportBiometricCSV()">📥 CSV</button>'
+                },
+                {
+                    name: '🏢 Centre-wise Data',
+                    description: 'Centre distribution and candidate allocation',
+                    buttons: '<button class="btn btn-success" onclick="exportCentreExcel()">📊 Excel</button> <button class="btn btn-primary" onclick="exportCentreCSV()">📥 CSV</button>'
+                },
+                {
+                    name: '⏰ Slot Allocation Report',
+                    description: 'Exam-wise slot distribution and candidates per slot',
+                    buttons: '<button class="btn btn-success" onclick="exportSlotExcel()">📊 Excel</button> <button class="btn btn-primary" onclick="exportSlotCSV()">📥 CSV</button>'
+                },
+                {
+                    name: '👤 Operator Activity Report',
+                    description: 'Operator assignments and activity logs',
+                    buttons: '<button class="btn btn-success" onclick="exportOperatorExcel()">📊 Excel</button> <button class="btn btn-primary" onclick="exportOperatorCSV()">📥 CSV</button>'
+                },
+                {
+                    name: '📱 App Download Data',
+                    description: 'All candidate data for mobile app download',
+                    buttons: '<button class="btn btn-info" onclick="exportAppJSON()">📋 JSON</button> <button class="btn btn-primary" onclick="exportAppCSV()">📥 CSV</button>'
+                },
+                {
+                    name: '👥 Comprehensive Candidate Data',
+                    description: 'All 10 candidate fields (OMR, Centre, Student, Father, DOB, Photos, Fingerprint, Face Match) - Exam-wise',
+                    buttons: '<button class="btn btn-success" onclick="exportComprehensiveExcel()">📊 Excel</button> <button class="btn btn-primary" onclick="exportComprehensiveCSV()">📥 CSV</button>'
+                }
+            ];
+
+            reports.forEach(report => {
+                const row = `<tr style="border-bottom: 1px solid #eee;">
+                    <td style="padding: 15px; color: #0d7377; font-weight: 600;">${report.name}</td>
+                    <td style="padding: 15px; color: #666;">${report.description}</td>
+                    <td style="padding: 15px; text-align: center;">${report.buttons}</td>
+                </tr>`;
+                tbody.innerHTML += row;
+            });
+        }
+
+        // Export Comprehensive to Excel
+        function exportComprehensiveExcel() {
+            try {
+                const selectedExam = document.getElementById('reportExamFilter').value;
+                let data = mockCandidates;
+                
+                if (selectedExam) {
+                    data = mockCandidates.filter(c => c.exam_id === selectedExam);
+                }
+
+                const exportData = data.map(c => ({
+                    'OMR No.': c.omr_number,
+                    'Roll No.': c.roll_number,
+                    'Candidate Name': c.candidate_name,
+                    'Father Name': c.father_name,
+                    'DOB': c.dob,
+                    'Centre Code': c.centre_code,
+                    'Upload Photo': c.upload_photo,
+                    'Verified Photo': c.verified_photo,
+                    'Fingerprint': c.fingerprint,
+                    'Face Match %': c.face_match,
+                    'Status': c.status
+                }));
+
+                const ws = XLSX.utils.json_to_sheet(exportData);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Comprehensive Data');
+                
+                const filename = selectedExam ? `Comprehensive_Candidate_Data_${selectedExam}.xlsx` : 'Comprehensive_Candidate_Data.xlsx';
+                XLSX.writeFile(wb, filename);
+                
+                alert('✅ Excel file downloaded successfully!');
+            } catch (error) {
+                alert('❌ Error downloading Excel: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Export Comprehensive to CSV
+        function exportComprehensiveCSV() {
+            try {
+                const selectedExam = document.getElementById('reportExamFilter').value;
+                let data = mockCandidates;
+                
+                if (selectedExam) {
+                    data = mockCandidates.filter(c => c.exam_id === selectedExam);
+                }
+
+                let csv = 'OMR No.,Roll No.,Candidate Name,Father Name,DOB,Centre Code,Upload Photo,Verified Photo,Fingerprint,Face Match %,Status\n';
+                data.forEach(c => {
+                    csv += `"${c.omr_number}","${c.roll_number}","${c.candidate_name}","${c.father_name}","${c.dob}","${c.centre_code}","${c.upload_photo}","${c.verified_photo}","${c.fingerprint}","${c.face_match}","${c.status}"\n`;
+                });
+                
+                const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                const filename = selectedExam ? `Comprehensive_Candidate_Data_${selectedExam}.csv` : 'Comprehensive_Candidate_Data.csv';
+                a.download = filename;
+                a.click();
+                window.URL.revokeObjectURL(url);
+                
+                alert('✅ CSV file downloaded successfully!');
+            } catch (error) {
+                alert('❌ Error downloading CSV: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Download CSV (Candidates Tab)
+        function downloadCandidateData() {
+            let csv = 'OMR No.,Roll No.,Candidate Name,Father Name,DOB,Centre Code,Upload Photo,Verified Photo,Fingerprint,Face Match %,Status\n';
+            mockCandidates.forEach(candidate => {
+                csv += `${candidate.omr_number},${candidate.roll_number},${candidate.candidate_name},${candidate.father_name},${candidate.dob},${candidate.centre_code},${candidate.upload_photo},${candidate.verified_photo},${candidate.fingerprint},${candidate.face_match},${candidate.status}\n`;
+            });
+            
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'candidates.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        }
+
+        // Download Excel (Candidates Tab)
+        function downloadCandidateExcel() {
+            try {
+                const ws = XLSX.utils.json_to_sheet(mockCandidates);
+                const wb = XLSX.utils.book_new();
+                XLSX.utils.book_append_sheet(wb, ws, 'Candidates');
+                XLSX.writeFile(wb, 'candidates.xlsx');
+                alert('✅ Excel file downloaded successfully!');
+            } catch (error) {
+                alert('❌ Error downloading Excel: ' + error.message);
+                console.error(error);
+            }
+        }
+
+        // Biometric Report Export
+        function exportBiometricExcel() {
+            alert('Biometric Status Report - Excel export');
+            exportComprehensiveExcel();
+        }
+        function exportBiometricCSV() {
+            alert('Biometric Status Report - CSV export');
+            exportComprehensiveCSV();
+        }
+
+        // Centre-wise Report Export
+        function exportCentreExcel() {
+            alert('Centre-wise Data - Excel export');
+            exportComprehensiveExcel();
+        }
+        function exportCentreCSV() {
+            alert('Centre-wise Data - CSV export');
+            exportComprehensiveCSV();
+        }
+
+        // Slot Report Export
+        function exportSlotExcel() {
+            alert('Slot Allocation Report - Excel export');
+            exportComprehensiveExcel();
+        }
+        function exportSlotCSV() {
+            alert('Slot Allocation Report - CSV export');
+            exportComprehensiveCSV();
+        }
+
+        // Operator Report Export
+        function exportOperatorExcel() {
+            alert('Operator Activity Report - Excel export');
+            exportComprehensiveExcel();
+        }
+        function exportOperatorCSV() {
+            alert('Operator Activity Report - CSV export');
+            exportComprehensiveCSV();
+        }
+
+        // App Download Export
+        function exportAppJSON() {
+            const selectedExam = document.getElementById('reportExamFilter').value;
+            let data = mockCandidates;
+            if (selectedExam) {
+                data = mockCandidates.filter(c => c.exam_id === selectedExam);
+            }
+            const json = JSON.stringify(data, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'app_download_data.json';
+            a.click();
+            window.URL.revokeObjectURL(url);
+            alert('JSON file downloaded successfully!');
+        }
+        function exportAppCSV() {
+            exportComprehensiveCSV();
+        }
+
+        // Logout Functions
+        function logout() {
+            document.getElementById('logoutModal').classList.add('show');
+        }
+
+        function closeLogoutModal() {
+            document.getElementById('logoutModal').classList.remove('show');
+        }
+
+        function confirmLogout() {
+            localStorage.clear();
+            sessionStorage.clear();
+            alert('✅ Logged out successfully!');
+            window.location.href = '/login.html';
+        }
+
+        function logoutAll() {
+            if (confirm('Are you sure you want to logout all users?')) {
+                alert('✅ All users logged out successfully!');
+                localStorage.clear();
+                sessionStorage.clear();
+            }
+        }
+
+        // Other Functions
+        function syncData() {
+            alert('🔄 Data synced successfully!');
+        }
+
+        function updateAllTabs() {
+            // Update based on selected exam
+        }
+
+        function addExam() {
+            alert('Add Exam functionality');
+        }
+
+        function addSlot() {
+            alert('Add Slot functionality');
+        }
+
+        function addCentre() {
+            alert('Add Centre functionality');
+        }
+
+        function addOperator() {
+            alert('Add Operator functionality');
+        }
+
+        // Close modal when clicking outside
+        window.onclick = function(event) {
+            const modal = document.getElementById('logoutModal');
+            if (event.target === modal) {
+                modal.classList.remove('show');
+            }
+        }
+    </script>
+</body>
+</html>
