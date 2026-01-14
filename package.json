@@ -1,0 +1,32 @@
+{
+  "name": "mpa-admin-panel",
+  "version": "1.0.0",
+  "description": "MPA Biometric Admin Panel - Complete exam, candidate, and centre management system",
+  "main": "index.html",
+  "scripts": {
+    "start": "open index.html",
+    "serve": "python3 -m http.server 8000",
+    "deploy": "aws s3 cp index.html s3://sepl-admin-portal/"
+  },
+  "keywords": [
+    "admin-panel",
+    "biometric",
+    "exam-management",
+    "candidate-management",
+    "mpa"
+  ],
+  "author": "Mehul Arora <mehularora8385@gmail.com>",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mehularora8385/mpa-admin-panel.git"
+  },
+  "bugs": {
+    "url": "https://github.com/mehularora8385/mpa-admin-panel/issues"
+  },
+  "homepage": "https://github.com/mehularora8385/mpa-admin-panel#readme",
+  "dependencies": {
+    "xlsx": "^0.18.5"
+  },
+  "devDependencies": {}
+}
