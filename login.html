@@ -159,18 +159,12 @@
             </div>
         </form>
 
-        <div class="credentials-info">
-            <strong>Demo Credentials:</strong><br>
-            Username: Mehul2026<br>
-            Password: Mehul@7300
-        </div>
+
     </div>
 
     <script>
         // ==================== CONFIGURATION ====================
-        const API_BASE_URL = 'http://13.204.65.158'; // Backend API
-        const ADMIN_USERNAME = 'Mehul2026';
-        const ADMIN_PASSWORD = 'Mehul@7300';
+        const API_BASE_URL = 'http://13.204.65.158/api/v1'; // Backend API
         const SESSION_TIMEOUT = 30 * 60 * 1000; // 30 minutes
 
         // ==================== CHECK IF ALREADY LOGGED IN ====================
@@ -203,7 +197,7 @@
             document.getElementById('loginButton').disabled = true;
 
             // Attempt login with backend API
-            fetch(`${API_BASE_URL}/api/admin/login`, {
+            fetch(`${API_BASE_URL}/auth/login`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -246,21 +240,8 @@
                 document.getElementById('loading').style.display = 'none';
                 document.getElementById('loginButton').disabled = false;
 
-                // Fallback to local authentication if backend is down
-                if (username === ADMIN_USERNAME && password === ADMIN_PASSWORD) {
-                    localStorage.setItem('adminSession', JSON.stringify({
-                        username: username,
-                        loginTime: new Date().getTime()
-                    }));
-                    localStorage.setItem('adminToken', 'local-token-' + Date.now());
-                    
-                    showSuccess('Login successful! Redirecting...');
-                    setTimeout(() => {
-                        window.location.href = 'index.html';
-                    }, 1000);
-                } else {
-                    showError('Backend connection error. Please check your credentials.');
-                }
+                // Show error if backend is down
+                showError('Backend connection error. Please try again later.');
             });
         }
 
