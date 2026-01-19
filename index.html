@@ -844,7 +844,7 @@
 
     <script>
         // ==================== CONFIGURATION ====================
-        const API_BASE_URL = 'http://localhost:3000'; // Backend API
+        const API_BASE_URL = 'http://13.204.65.158'; // Backend API
         // Note: Credentials are handled by backend login API only
         // DO NOT store credentials in frontend code
 
@@ -925,10 +925,18 @@
         }
 
         // ==================== DASHBOARD FUNCTIONALITY ====================
-        function loadDashboard() {
+        function loadDashboard(examId = null) {
             if (!checkSession()) return;
 
-            fetch(`${API_BASE_URL}/api/v1/dashboard/stats`, {
+            // Get exam ID from parameter or localStorage
+            const selectedExamId = examId || localStorage.getItem('selectedExamId');
+            
+            let statsUrl = `${API_BASE_URL}/api/v1/dashboard/stats`;
+            if (selectedExamId) {
+                statsUrl += `?examId=${selectedExamId}`;
+            }
+
+            fetch(statsUrl, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                 }
@@ -939,7 +947,7 @@
                 document.getElementById('biometricCaptured').textContent = data.biometricCaptured || 0;
                 document.getElementById('operatorsActive').textContent = data.operatorsActive || 0;
                 document.getElementById('centresOnline').textContent = data.centresOnline || 0;
-                loadCentreData();
+                loadCentreData(selectedExamId);
             })
             .catch(error => {
                 console.error('Error loading stats:', error);
@@ -947,8 +955,13 @@
             });
         }
 
-        function loadCentreData() {
-            fetch(`${API_BASE_URL}/api/v1/centres/data`, {
+        function loadCentreData(examId = null) {
+            let centreUrl = `${API_BASE_URL}/api/v1/centres/data`;
+            if (examId) {
+                centreUrl += `?examId=${examId}`;
+            }
+
+            fetch(centreUrl, {
                 headers: {
                     'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
                 }
@@ -2258,11 +2271,17 @@
         // ==================== FILTER FUNCTIONALITY ====================
         function filterByExam(examId) {
             console.log('Filter by exam:', examId);
-            loadDashboard();
+            // Store selected exam ID for filtering
+            localStorage.setItem('selectedExamId', examId);
+            // Reload dashboard with exam filter
+            loadDashboard(examId);
         }
         function filterDashboard(examId) {
             console.log('Dashboard filter:', examId);
-            loadDashboard();
+            // Store selected exam ID for filtering
+            localStorage.setItem('selectedExamId', examId);
+            // Reload dashboard with exam filter
+            loadDashboard(examId);
         }
         // ==================== INITIALIZATION ======================
         document.addEventListener('DOMContentLoaded', function() {
