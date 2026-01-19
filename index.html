@@ -1279,6 +1279,7 @@
 
         // Show Dashboard Credentials Modal
         function showDashboardCredentials(data) {
+            const dashboardUrl = `exam-dashboard.html?exam=${data.examId}`;
             const modal = document.createElement('div');
             modal.className = 'modal active';
             modal.innerHTML = `
@@ -1303,7 +1304,7 @@
                         
                         <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
                             <p style="margin: 0 0 10px 0; font-weight: bold;">🔗 Dashboard Link:</p>
-                            <input type="text" id="dashboardLink" value="${data.dashboardLink}" 
+                            <input type="text" id="dashboardLink" value="${window.location.origin}/${dashboardUrl}" 
                                    style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" readonly>
                         </div>
                         
@@ -1311,7 +1312,7 @@
                             <button class="btn btn-info" onclick="copyDashboardLink()">
                                 📋 Copy Link
                             </button>
-                            <button class="btn btn-success" onclick="window.open('${data.dashboardLink}', '_blank')">
+                            <button class="btn btn-success" onclick="window.open('${dashboardUrl}', '_blank')">
                                 🔗 Open Dashboard
                             </button>
                             <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">

@@ -1,0 +1,561 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Dashboard - MPA Admin</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1400px;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 32px;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 16px;
+            opacity: 0.9;
+        }
+
+        .login-section {
+            padding: 40px;
+            display: none;
+        }
+
+        .login-section.active {
+            display: block;
+        }
+
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .dashboard-section {
+            padding: 40px;
+            display: none;
+        }
+
+        .dashboard-section.active {
+            display: block;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+
+        .stat-card h3 {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .stat-card .value {
+            font-size: 36px;
+            font-weight: bold;
+        }
+
+        .filters {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+
+        .filters label {
+            font-weight: 600;
+            color: #333;
+        }
+
+        .filters select {
+            padding: 10px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            min-width: 200px;
+        }
+
+        .filters button {
+            padding: 10px 20px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .filters button:hover {
+            background: #218838;
+        }
+
+        .data-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        table thead {
+            background: #667eea;
+            color: white;
+        }
+
+        table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 12px;
+            letter-spacing: 1px;
+        }
+
+        table td {
+            padding: 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        table tbody tr:hover {
+            background: #f8f9fa;
+        }
+
+        .badge {
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+
+        .badge-danger {
+            background: #f8d7da;
+            color: #721c24;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            padding: 10px 20px;
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+        }
+
+        .logout-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #666;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+        }
+
+        .refresh-info {
+            text-align: center;
+            color: #666;
+            font-size: 14px;
+            margin-top: 20px;
+        }
+    </style>
+<script src="https://sites.super.myninja.ai/_assets/ninja-daytona-script.js"></script>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1 id="examTitle">Exam Dashboard</h1>
+            <p id="examSubtitle">Real-time Exam Monitoring</p>
+            <button class="logout-btn" id="logoutBtn" style="display: none;">Logout</button>
+        </div>
+
+        <!-- Login Section -->
+        <div class="login-section active" id="loginSection">
+            <div class="login-form">
+                <h2 style="text-align: center; margin-bottom: 30px; color: #333;">Dashboard Login</h2>
+                <div id="loginError" class="error" style="display: none;"></div>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="username">Username</label>
+                        <input type="text" id="username" name="username" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="password">Password</label>
+                        <input type="password" id="password" name="password" required>
+                    </div>
+                    <button type="submit" class="btn">Login to Dashboard</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Dashboard Section -->
+        <div class="dashboard-section" id="dashboardSection">
+            <!-- Statistics Cards -->
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Candidates</h3>
+                    <div class="value" id="totalCandidates">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Registered</h3>
+                    <div class="value" id="registeredCandidates">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Verified</h3>
+                    <div class="value" id="verifiedCandidates">0</div>
+                </div>
+                <div class="stat-card">
+                    <h3>Sync Done</h3>
+                    <div class="value" id="syncDoneCount">0</div>
+                </div>
+            </div>
+
+            <!-- Filters -->
+            <div class="filters">
+                <label for="centreFilter">Filter by Centre:</label>
+                <select id="centreFilter">
+                    <option value="">All Centres</option>
+                </select>
+                <button onclick="refreshData()">🔄 Refresh Data</button>
+            </div>
+
+            <!-- Data Table -->
+            <div class="data-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Centre Code</th>
+                            <th>Candidate Name</th>
+                            <th>Father Name</th>
+                            <th>Roll No</th>
+                            <th>OMR No</th>
+                            <th>Status</th>
+                            <th>Biometric</th>
+                            <th>Sync Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidatesTableBody">
+                        <tr>
+                            <td colspan="8" class="loading">Loading data...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="refresh-info">
+                Data refreshes automatically every 30 seconds
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'http://localhost:3000';
+        let examId = null;
+        let examData = null;
+        let refreshInterval = null;
+
+        // Get exam ID from URL
+        function getExamIdFromUrl() {
+            const urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get('exam');
+        }
+
+        // Login functionality
+        document.getElementById('loginForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            try {
+                // Verify credentials with backend
+                const response = await fetch(`${API_BASE_URL}/api/v1/exams/${examId}/verify-dashboard`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Store session
+                    sessionStorage.setItem('dashboardAuth', JSON.stringify({
+                        examId,
+                        username,
+                        timestamp: Date.now()
+                    }));
+
+                    // Show dashboard
+                    showDashboard(data.exam);
+                } else {
+                    showError('Invalid username or password');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                showError('Login failed. Please try again.');
+            }
+        });
+
+        function showError(message) {
+            const errorDiv = document.getElementById('loginError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+        }
+
+        function showDashboard(exam) {
+            examData = exam;
+            document.getElementById('loginSection').classList.remove('active');
+            document.getElementById('dashboardSection').classList.add('active');
+            document.getElementById('logoutBtn').style.display = 'block';
+            document.getElementById('examTitle').textContent = exam.name + ' Dashboard';
+            document.getElementById('examSubtitle').textContent = `Exam Date: ${exam.examDate}`;
+
+            // Load dashboard data
+            loadDashboardData();
+
+            // Start auto-refresh
+            refreshInterval = setInterval(loadDashboardData, 30000);
+        }
+
+        async function loadDashboardData() {
+            try {
+                // Get exam statistics
+                const statsResponse = await fetch(`${API_BASE_URL}/api/v1/exams/${examId}/dashboard-stats`);
+                const statsData = await statsResponse.json();
+
+                if (statsData.success) {
+                    updateStatistics(statsData.data);
+                }
+
+                // Get candidates data
+                const centreFilter = document.getElementById('centreFilter').value;
+                const candidatesResponse = await fetch(
+                    `${API_BASE_URL}/api/v1/exams/${examId}/dashboard-candidates?centre=${centreFilter}`
+                );
+                const candidatesData = await candidatesResponse.json();
+
+                if (candidatesData.success) {
+                    updateCandidatesTable(candidatesData.data);
+                    updateCentreFilter(candidatesData.centres);
+                }
+            } catch (error) {
+                console.error('Error loading dashboard data:', error);
+            }
+        }
+
+        function updateStatistics(stats) {
+            document.getElementById('totalCandidates').textContent = stats.totalCandidates || 0;
+            document.getElementById('registeredCandidates').textContent = stats.registeredCandidates || 0;
+            document.getElementById('verifiedCandidates').textContent = stats.verifiedCandidates || 0;
+            document.getElementById('syncDoneCount').textContent = stats.syncDoneCount || 0;
+        }
+
+        function updateCandidatesTable(candidates) {
+            const tbody = document.getElementById('candidatesTableBody');
+            
+            if (!candidates || candidates.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #666;">No candidates found</td></tr>';
+                return;
+            }
+
+            let html = '';
+            candidates.forEach(candidate => {
+                const statusClass = candidate.status === 'Verified' ? 'success' : 
+                                  candidate.status === 'Registered' ? 'warning' : 'danger';
+                const biometricClass = candidate.biometricCaptured ? 'success' : 'danger';
+                const syncClass = candidate.syncStatus === 'Synced' ? 'success' : 'warning';
+
+                html += `
+                    <tr>
+                        <td>${candidate.centreCode || '-'}</td>
+                        <td>${candidate.name || '-'}</td>
+                        <td>${candidate.fatherName || '-'}</td>
+                        <td>${candidate.rollNo || '-'}</td>
+                        <td>${candidate.omrNo || '-'}</td>
+                        <td><span class="badge badge-${statusClass}">${candidate.status || 'Pending'}</span></td>
+                        <td><span class="badge badge-${biometricClass}">${candidate.biometricCaptured ? 'Captured' : 'Pending'}</span></td>
+                        <td><span class="badge badge-${syncClass}">${candidate.syncStatus || 'Pending'}</span></td>
+                    </tr>
+                `;
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        function updateCentreFilter(centres) {
+            const select = document.getElementById('centreFilter');
+            const currentValue = select.value;
+            
+            let html = '<option value="">All Centres</option>';
+            if (centres && centres.length > 0) {
+                centres.forEach(centre => {
+                    html += `<option value="${centre}">${centre}</option>`;
+                });
+            }
+            
+            select.innerHTML = html;
+            select.value = currentValue;
+        }
+
+        function refreshData() {
+            loadDashboardData();
+        }
+
+        // Logout functionality
+        document.getElementById('logoutBtn').addEventListener('click', () => {
+            if (confirm('Are you sure you want to logout?')) {
+                sessionStorage.removeItem('dashboardAuth');
+                clearInterval(refreshInterval);
+                location.reload();
+            }
+        });
+
+        // Centre filter change
+        document.getElementById('centreFilter').addEventListener('change', () => {
+            loadDashboardData();
+        });
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            examId = getExamIdFromUrl();
+            
+            if (!examId) {
+                alert('No exam ID provided');
+                return;
+            }
+
+            // Check if already logged in
+            const auth = sessionStorage.getItem('dashboardAuth');
+            if (auth) {
+                const authData = JSON.parse(auth);
+                if (authData.examId === examId) {
+                    // Auto-login if session exists
+                    fetch(`${API_BASE_URL}/api/v1/exams/${examId}`)
+                        .then(res => res.json())
+                        .then(data => {
+                            if (data.success) {
+                                showDashboard(data.data);
+                            }
+                        });
+                }
+            }
+        });
+    </script>
+</body>
+</html>
