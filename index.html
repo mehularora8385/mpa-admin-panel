@@ -188,6 +188,66 @@
         .btn-export:hover {
             background: #ff8c00;
         }
+        .btn-success {
+            background: #28a745;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-success:hover {
+            background: #218838;
+        }
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        .btn-info {
+            background: #17a2b8;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-info:hover {
+            background: #138496;
+        }
+        .btn-warning {
+            background: #ffc107;
+            color: #212529;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-warning:hover {
+            background: #e0a800;
+        }
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+            padding: 8px 15px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
         table {
             width: 100%;
             border-collapse: collapse;
@@ -999,18 +1059,36 @@
         }
 
         function displayExamsTable(data) {
-            let html = '<table><thead><tr><th>Exam Name</th><th>Code</th><th>Date</th><th>Candidates</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+            let html = '<table><thead><tr><th>Exam Name</th><th>Status</th><th>Date</th><th>Slots</th><th>Total Candidates</th><th>Mock Control</th><th>Exam Control</th><th>Dashboard</th><th>Actions</th></tr></thead><tbody>';
             
             data.forEach(exam => {
+                const isActive = exam.status === 'active';
+                const hasDashboard = exam.dashboardCreated;
+                
                 html += `<tr>
                     <td>${exam.name}</td>
-                    <td>${exam.code}</td>
-                    <td>${exam.date}</td>
-                    <td>${exam.candidates}</td>
-                    <td><span class="badge badge-${exam.status === 'Active' ? 'success' : 'warning'}">${exam.status}</span></td>
+                    <td><span class="badge badge-${isActive ? 'success' : 'warning'}">${isActive ? 'Active' : 'Inactive'}</span></td>
+                    <td>${exam.examDate || exam.date}</td>
+                    <td>${exam.totalSlots || 0}</td>
+                    <td>${exam.totalCandidates || 0}</td>
                     <td>
-                        <button class="btn-edit" onclick="editExam(${exam.id})">Edit</button>
-                        <button class="btn-delete" onclick="deleteExam(${exam.id})">Delete</button>
+                        <button class="btn btn-${exam.mockActive ? 'danger' : 'success'}" onclick="toggleMockControl('${exam.id}', ${exam.mockActive})">
+                            ${exam.mockActive ? 'Stop' : 'Activate'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-${isActive ? 'danger' : 'success'}" onclick="toggleExamControl('${exam.id}', ${isActive})">
+                            ${isActive ? 'Stop' : 'Activate'}
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-success" onclick="createDashboard('${exam.id}', '${exam.name}')">
+                            📊 Create
+                        </button>
+                    </td>
+                    <td>
+                        <button class="btn btn-info" onclick="editExam('${exam.id}')">✏️ Edit</button>
+                        <button class="btn btn-warning" onclick="openUploadModal('${exam.id}', '${exam.name}')">📤 Upload</button>
                     </td>
                 </tr>`;
             });
@@ -1133,6 +1211,264 @@
                     alert('Error deleting exam');
                 });
             }
+        }
+
+        // Toggle Mock Control
+        function toggleMockControl(examId, isActive) {
+            const action = isActive ? 'deactivate' : 'activate';
+            fetch(`${API_BASE_URL}/api/v1/exams/${examId}/mock-${action}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`Mock exam ${action}d successfully!`);
+                loadExams();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error ${action}ing mock exam`);
+            });
+        }
+
+        // Toggle Exam Control
+        function toggleExamControl(examId, isActive) {
+            const action = isActive ? 'deactivate' : 'activate';
+            fetch(`${API_BASE_URL}/api/v1/exams/${examId}/${action}`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                alert(`Exam ${action}d successfully!`);
+                loadExams();
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert(`Error ${action}ing exam`);
+            });
+        }
+
+        // Create Dashboard
+        function createDashboard(examId, examName) {
+            if (!confirm(`Create dashboard for ${examName}?`)) return;
+            
+            fetch(`${API_BASE_URL}/api/v1/exams/${examId}/create-dashboard`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showDashboardCredentials(data.data);
+                } else {
+                    alert('Error creating dashboard: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error creating dashboard');
+            });
+        }
+
+        // Show Dashboard Credentials Modal
+        function showDashboardCredentials(data) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>📊 Dashboard Credentials</h2>
+                        <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <div style="background: #d4edda; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0; color: #155724;">
+                                ✅ <strong>Dashboard Created Successfully!</strong><br>
+                                Exam: ${data.examName}
+                            </p>
+                        </div>
+                        
+                        <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold;">🔑 Login Credentials:</p>
+                            <p style="margin: 5px 0;">Username: <strong style="color: #007bff;">${data.username}</strong></p>
+                            <p style="margin: 5px 0;">Password: <strong style="color: #007bff;">${data.password}</strong></p>
+                        </div>
+                        
+                        <div style="background: #e7f3ff; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                            <p style="margin: 0 0 10px 0; font-weight: bold;">🔗 Dashboard Link:</p>
+                            <input type="text" id="dashboardLink" value="${data.dashboardLink}" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;" readonly>
+                        </div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center;">
+                            <button class="btn btn-info" onclick="copyDashboardLink()">
+                                📋 Copy Link
+                            </button>
+                            <button class="btn btn-success" onclick="window.open('${data.dashboardLink}', '_blank')">
+                                🔗 Open Dashboard
+                            </button>
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Copy Dashboard Link
+        function copyDashboardLink() {
+            const linkInput = document.getElementById('dashboardLink');
+            linkInput.select();
+            document.execCommand('copy');
+            alert('Dashboard link copied to clipboard!');
+        }
+
+        // Open Upload Modal
+        function openUploadModal(examId, examName) {
+            const modal = document.createElement('div');
+            modal.className = 'modal active';
+            modal.id = 'uploadModal';
+            modal.innerHTML = `
+                <div class="modal-content" style="max-width: 600px;">
+                    <div class="modal-header">
+                        <h2>📤 Upload Candidates Data</h2>
+                        <span class="close" onclick="this.closest('.modal').remove()">&times;</span>
+                    </div>
+                    <div class="modal-body">
+                        <p><strong>Exam:</strong> ${examName}</p>
+                        <p style="color: #666; font-size: 14px;">
+                            Upload an Excel file with candidate data. The system will automatically distribute candidates 
+                            by centre code and shift across available slots.
+                        </p>
+                        
+                        <div style="margin: 20px 0;">
+                            <label style="display: block; margin-bottom: 10px; font-weight: bold;">
+                                Select Excel File:
+                            </label>
+                            <input type="file" id="candidatesFile" accept=".xlsx,.xls" 
+                                   style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 4px;">
+                        </div>
+                        
+                        <div id="uploadProgress" style="display: none; margin: 20px 0;">
+                            <div style="background: #f0f0f0; border-radius: 4px; overflow: hidden;">
+                                <div id="progressBar" style="background: #28a745; height: 30px; width: 0%; 
+                                     transition: width 0.3s; display: flex; align-items: center; justify-content: center; color: white;">
+                                    <span id="progressText">0%</span>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="uploadResult" style="display: none; margin: 20px 0;"></div>
+                        
+                        <div style="display: flex; gap: 10px; justify-content: center; margin-top: 20px;">
+                            <button class="btn btn-success" onclick="uploadCandidates('${examId}')">
+                                📤 Upload & Distribute
+                            </button>
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                                Cancel
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+            document.body.appendChild(modal);
+        }
+
+        // Upload Candidates
+        function uploadCandidates(examId) {
+            const fileInput = document.getElementById('candidatesFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a file to upload');
+                return;
+            }
+            
+            const formData = new FormData();
+            formData.append('file', file);
+            
+            // Show progress
+            document.getElementById('uploadProgress').style.display = 'block';
+            document.getElementById('progressBar').style.width = '50%';
+            document.getElementById('progressText').textContent = 'Uploading...';
+            
+            fetch(`${API_BASE_URL}/api/v1/exams/${examId}/upload-candidates`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('adminToken')}`
+                },
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById('progressBar').style.width = '100%';
+                document.getElementById('progressText').textContent = 'Complete!';
+                
+                if (data.success) {
+                    showUploadResult(data.data);
+                    loadExams(); // Refresh exam list
+                } else {
+                    alert('Error uploading candidates: ' + data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('Error uploading candidates');
+                document.getElementById('uploadProgress').style.display = 'none';
+            });
+        }
+
+        // Show Upload Result
+        function showUploadResult(data) {
+            const resultDiv = document.getElementById('uploadResult');
+            resultDiv.style.display = 'block';
+            
+            let html = `
+                <div style="background: #d4edda; padding: 15px; border-radius: 8px;">
+                    <h3 style="margin: 0 0 10px 0; color: #155724;">✅ Upload Successful!</h3>
+                    <p style="margin: 5px 0;"><strong>Total Candidates:</strong> ${data.totalCandidates}</p>
+                    <p style="margin: 5px 0;"><strong>Distributed:</strong> ${data.totalDistributed}</p>
+                    
+                    <h4 style="margin: 15px 0 10px 0;">Distribution Summary:</h4>
+                    <table style="width: 100%; border-collapse: collapse;">
+                        <thead>
+                            <tr style="background: #c3e6cb;">
+                                <th style="padding: 8px; border: 1px solid #b1dfbb;">Centre</th>
+                                <th style="padding: 8px; border: 1px solid #b1dfbb;">Shift</th>
+                                <th style="padding: 8px; border: 1px solid #b1dfbb;">Slot</th>
+                                <th style="padding: 8px; border: 1px solid #b1dfbb;">Candidates</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+            `;
+            
+            data.distributionSummary.forEach(item => {
+                html += `
+                    <tr>
+                        <td style="padding: 8px; border: 1px solid #b1dfbb;">${item.centreCode}</td>
+                        <td style="padding: 8px; border: 1px solid #b1dfbb;">${item.shift}</td>
+                        <td style="padding: 8px; border: 1px solid #b1dfbb;">${item.slotName}</td>
+                        <td style="padding: 8px; border: 1px solid #b1dfbb;">${item.candidatesCount}</td>
+                    </tr>
+                `;
+            });
+            
+            html += `
+                        </tbody>
+                    </table>
+                </div>
+            `;
+            
+            resultDiv.innerHTML = html;
         }
 
         function exportExamsToExcel() {
