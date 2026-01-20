@@ -1,0 +1,22 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<title>Exam Management</title>
+</head>
+<body>
+
+<h2>Create Exam</h2>
+<input id="name" placeholder="Exam Name">
+<input id="code" placeholder="Exam Code">
+<button onclick="createExam()">Create</button>
+
+<h3>Upload Candidates CSV</h3>
+<input type="file" id="csvFile">
+<button onclick="uploadCSV()">Upload</button>
+
+<div id="examList"></div>
+
+<script src="exam.js"></script>
+</body>
+</html>
