@@ -1,7 +1,19 @@
 
-fetch("https://API_URL/api/att/stats")
-.then(r=>r.json()).then(d=>{
- document.getElementById("total").innerHTML=d.total;
- document.getElementById("present").innerHTML=d.present;
- document.getElementById("verified").innerHTML=d.verified;
-});
+function loadStats(exam){
+ fetch("https://API_URL/api/stats?exam="+exam)
+ .then(r=>r.json()).then(d=>{
+  total.innerHTML=d.total;
+  present.innerHTML=d.present;
+  verified.innerHTML=d.verified;
+ });
+}
+
+function syncAll(exam){
+ fetch("https://API_URL/api/sync-all",{method:"POST"})
+ .then(()=>alert("SYNC SENT"));
+}
+
+function logoutAll(exam){
+ fetch("https://API_URL/api/logout-all",{method:"POST"})
+ .then(()=>alert("LOGOUT SENT"));
+}
